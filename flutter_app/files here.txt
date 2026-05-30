@@ -1,6 +1,7 @@
-<<<<<<< HEAD
 HELLO WORLD
 Trying our best1
-=======
-ניסיון
->>>>>>> 7f46e03f52e415f4ddb51653061e4ddc755eb5d4
+
+
+
+
+Python. Flutter
