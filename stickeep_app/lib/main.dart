@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:stickeep_app/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,9 +26,47 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'Stickeep Test',
-      home: FirebaseTestScreen(),
+      home: Scaffold(
+        backgroundColor: const Color(0xFFF0F4F8),
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Stickeep',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF185FA5),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {},
+                child: const Text('New reservation'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () {},
+                child: const Text('My reservations'),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  StatusTag.free(),
+                  const SizedBox(width: 8),
+                  StatusTag.reserved(),
+                  const SizedBox(width: 8),
+                  StatusTag.occupied(),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
