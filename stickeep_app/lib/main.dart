@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:stickeep_app/screens/auth/login_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // אתחול Firebase עם הנתונים המדויקים מהמסך שלך!
   await Firebase.initializeApp(
     options: const FirebaseOptions(
-      apiKey: 'AIzaSyCjbSpVQLYr1h6z1NpsXRMQppizFI392og',
+      apiKey: 'AIzaSyCjbSPVQlYr1h6z1NpsXRMQppizFI392og',
       appId: '1:533886545260:web:05d58c3e975ee7ee439749',
       messagingSenderId: '533886545260',
       projectId: 'stickeep',
@@ -27,46 +27,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Stickeep Test',
-      home: Scaffold(
-        backgroundColor: const Color(0xFFF0F4F8),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Stickeep',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF185FA5),
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () {},
-                child: const Text('New reservation'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: () {},
-                child: const Text('My reservations'),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  StatusTag.free(),
-                  const SizedBox(width: 8),
-                  StatusTag.reserved(),
-                  const SizedBox(width: 8),
-                  StatusTag.occupied(),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+      title: 'Stickeep',
+      theme: AppTheme.theme,
+      home: const FirebaseTestScreen(),
     );
   }
 }
@@ -78,63 +41,146 @@ class FirebaseTestScreen extends StatefulWidget {
   State<FirebaseTestScreen> createState() => _FirebaseTestScreenState();
 }
 
-class _FirebaseTestScreenState extends State<FirebaseTestScreen> {
-  // חיבור ישיר למשתנה שיצרת בענן
+class _FirebaseTestScreenState extends State<FirebaseTestScreen>
+    with TickerProviderStateMixin {
+  // ── Firebase (unchanged) ──────────────────────────────────────────────────
   final DatabaseReference _statusRef =
       FirebaseDatabase.instance.ref('chair_status');
-  String _currentStatus = "Loading...";
+  String _currentStatus = 'Loading...';
+
+  // ── Pulse animation ───────────────────────────────────────────────────────
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
     _activateStatusListener();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 900),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.55, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
   }
 
   void _activateStatusListener() {
-    // האזנה בזמן אמת לשינויים בענן (Observer Pattern)
     _statusRef.onValue.listen((DatabaseEvent event) {
       final data = event.snapshot.value;
-
-      // הדפסה לקונסול של המחשב (דרישת המשימה בשבוע 1!)
       print('--- [Firebase Update] chair_status current value is: $data ---');
-
       setState(() {
-        _currentStatus = data?.toString() ?? "No data";
+        _currentStatus = data?.toString() ?? 'No data';
       });
     }, onError: (error) {
       print('Error listening to database: $error');
     });
   }
 
+  // ── UI ────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final isFree = _currentStatus.toLowerCase() == 'free';
+    final statusColor = isFree ? AppColors.green : AppColors.red;
+    final statusBg = isFree ? AppColors.greenLight : AppColors.redLight;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stickeep Integration 0'),
-        backgroundColor: Colors.blueAccent,
+        title: const Text('Stickeep'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline),
+            onPressed: () {},
+          ),
+        ],
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Chair Status from Cloud:',
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              _currentStatus,
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: _currentStatus == "free" ? Colors.green : Colors.red,
+            // ── Status card ─────────────────────────────────────────────────
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Chair Status', style: AppTextStyles.sectionTitle),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ScaleTransition(
+                        scale: _pulseAnimation,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: const BoxDecoration(
+                            color: AppColors.green,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: statusBg,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _currentStatus.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: statusColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 30),
-            const Text(
-              'Check your VS Code Debug Console to see the exact print logs!',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
+            const SizedBox(height: 16),
+
+            // ── New Reservation ─────────────────────────────────────────────
+            ElevatedButton.icon(
+              onPressed: () {},
+              icon: const Icon(Icons.calendar_today_outlined, size: 18),
+              label: const Text('New Reservation'),
+            ),
+            const SizedBox(height: 10),
+
+            // ── My Reservations ─────────────────────────────────────────────
+            OutlinedButton(
+              onPressed: () {},
+              child: const Text('My Reservations'),
+            ),
+            const SizedBox(height: 10),
+
+            // ── Go to Login Screen ──────────────────────────────────────────
+            OutlinedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.blue,
+                side: const BorderSide(color: AppColors.blue),
+              ),
+              child: const Text('Go to Login Screen'),
             ),
           ],
         ),

@@ -1,0 +1,424 @@
+import 'dart:typed_data';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:stickeep_app/theme/app_theme.dart';
+
+class SignupScreen extends StatefulWidget {
+  const SignupScreen({super.key});
+
+  @override
+  State<SignupScreen> createState() => _SignupScreenState();
+}
+
+class _SignupScreenState extends State<SignupScreen> {
+  // ── Form controllers ──────────────────────────────────────────────────────
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _studentIdController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _submitted = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // ── Photo ─────────────────────────────────────────────────────────────────
+  Uint8List? _avatarBytes;
+  final _picker = ImagePicker();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _studentIdController.dispose();
+    super.dispose();
+  }
+
+  // ── Photo logic ───────────────────────────────────────────────────────────
+
+  void _showPhotoBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (!kIsWeb)
+              ListTile(
+                leading: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: AppColors.blue,
+                ),
+                title: const Text('Take a photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: AppColors.blue,
+              ),
+              title: const Text('Choose from gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? file = await _picker.pickImage(
+      source: source,
+      imageQuality: 80,
+    );
+    if (file == null) return;
+    print('[SignupScreen] Image selected: ${file.path}');
+    final bytes = await file.readAsBytes();
+    setState(() => _avatarBytes = bytes);
+  }
+
+  // ── Auth + Firestore ──────────────────────────────────────────────────────
+
+  Future<void> _onCreateAccount() async {
+    setState(() {
+      _submitted = true;
+      _errorMessage = null;
+    });
+
+    if (_nameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty ||
+        _studentIdController.text.trim().isEmpty) {
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Create Firebase Auth account
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      print('[SignupScreen] Auth account created — uid: ${credential.user!.uid}');
+
+      // 2. Save registration request to Firestore
+      await FirebaseFirestore.instance
+          .collection('registrationRequests')
+          .doc(credential.user!.uid)
+          .set({
+        'studentNumber': _studentIdController.text.trim(),
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'status': 'pending',
+        'submittedAt': DateTime.now(),
+      });
+
+      print('[SignupScreen] Firestore doc saved — studentId: ${_studentIdController.text.trim()}');
+
+      if (!mounted) return;
+
+      // 3. Success dialog
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text('Request Submitted'),
+          content: const Text(
+            'Your request has been submitted! You will be notified once approved.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+      // 4. Back to LoginScreen
+      if (mounted) Navigator.pop(context);
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _errorMessage = _friendlyAuthError(e.code);
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('[SignupScreen] Unexpected error: $e');
+      setState(() {
+        _errorMessage = 'Something went wrong. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  String _friendlyAuthError(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'An account with this email already exists.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'weak-password':
+        return 'Password must be at least 6 characters.';
+      case 'operation-not-allowed':
+        return 'Email sign-up is not enabled. Contact support.';
+      default:
+        return 'Sign-up failed ($code). Please try again.';
+    }
+  }
+
+  String? _required(TextEditingController c) =>
+      (_submitted && c.text.trim().isEmpty) ? 'This field is required' : null;
+
+  // ── Build ─────────────────────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Create account'),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Tappable avatar with "+" badge ───────────────────────────
+              Center(
+                child: GestureDetector(
+                  onTap: _showPhotoBottomSheet,
+                  child: SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _avatarBytes != null
+                            ? CircleAvatar(
+                                radius: 40,
+                                backgroundImage: MemoryImage(_avatarBytes!),
+                              )
+                            : Container(
+                                width: 80,
+                                height: 80,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.blueLight,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  size: 44,
+                                  color: AppColors.blue,
+                                ),
+                              ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            decoration: const BoxDecoration(
+                              color: AppColors.blue,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              size: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // ── Full name ────────────────────────────────────────────────
+              const Text('Full name', style: AppTextStyles.label),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nameController,
+                textCapitalization: TextCapitalization.words,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Enter your full name',
+                  errorText: _required(_nameController),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Email ────────────────────────────────────────────────────
+              const Text('Email', style: AppTextStyles.label),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Enter your email',
+                  errorText: _required(_emailController),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Password ─────────────────────────────────────────────────
+              const Text('Password', style: AppTextStyles.label),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Create a password',
+                  errorText: _required(_passwordController),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: AppColors.textSecondary,
+                    ),
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Student ID (highlighted) ─────────────────────────────────
+              const Text('Student ID number', style: AppTextStyles.label),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _studentIdController,
+                keyboardType: TextInputType.number,
+                onChanged: (_) => setState(() {}),
+                style: const TextStyle(
+                  color: AppColors.blue,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 3,
+                  fontSize: 15,
+                ),
+                decoration: InputDecoration(
+                  hintText: '123456789',
+                  hintStyle: TextStyle(
+                    color: AppColors.blue.withOpacity(0.45),
+                    letterSpacing: 3,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.blueLight,
+                  errorText: _required(_studentIdController),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppColors.blue),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppColors.blue),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide:
+                        const BorderSide(color: AppColors.blue, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.red),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.red, width: 2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '⭐ This number will appear on your seat sticker',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.blue,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // ── Create account ───────────────────────────────────────────
+              ElevatedButton(
+                onPressed: _isLoading ? null : _onCreateAccount,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Text('Create account'),
+              ),
+
+              // ── Error message ────────────────────────────────────────────
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 10),
+                Center(
+                  child: Text(
+                    _errorMessage!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontSize: 13,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+
+              // ── Back to login ────────────────────────────────────────────
+              OutlinedButton(
+                onPressed: _isLoading ? null : () => Navigator.pop(context),
+                child: const Text('Already have an account? Login'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
