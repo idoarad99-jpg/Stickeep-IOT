@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/auth/signup_screen.dart';
+import 'package:stickeep_app/screens/student/home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -48,34 +49,80 @@ class _LoginScreenState extends State<LoginScreen> {
 
       print('[LoginScreen] Signed in — uid: ${credential.user!.uid}');
 
-      // 2. Check registration status in Firestore
-      final doc = await FirebaseFirestore.instance
-          .collection('registrationRequests')
-          .doc(credential.user!.uid)
+      final uid = credential.user!.uid;
+
+      // 2. Check students/{uid} — any existing doc means authorized
+      final studentDoc = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(uid)
           .get();
 
       if (!mounted) return;
 
-      if (!doc.exists) {
+      if (studentDoc.exists) {
+        final data = studentDoc.data()!;
+        final userName = data['name'] as String? ?? 'User';
+        final userRole = data['role'] as String? ?? 'student';
+        print('[LoginScreen] role from Firestore: "$userRole"');
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomeScreen(
+              userName: userName,
+              userRole: userRole,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // 3. Not in students/ → check registrationRequests
+      final reqDoc = await FirebaseFirestore.instance
+          .collection('registrationRequests')
+          .doc(uid)
+          .get();
+
+      if (!mounted) return;
+
+      if (!reqDoc.exists) {
         setState(() {
-          _errorMessage =
-              'No registration request found. Please sign up first.';
+          _errorMessage = 'Unknown account. Please sign up first.';
           _isLoading = false;
         });
         return;
       }
 
-      final status = doc.data()?['status'] as String?;
+      final status = reqDoc.data()?['status'] as String?;
 
       switch (status) {
         case 'approved':
-          // 3. Approved → pop back to FirebaseTestScreen (root of the stack)
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          // Copy approved request into students/ then navigate
+          final reqData = reqDoc.data()!;
+          await FirebaseFirestore.instance
+              .collection('students')
+              .doc(uid)
+              .set({
+            'name': reqData['name'] ?? '',
+            'role': reqData['role'] ?? 'student',
+            'email': reqData['email'] ?? email,
+          });
+
+          if (!mounted) return;
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => HomeScreen(
+                userName: reqData['name'] as String? ?? 'User',
+                userRole: reqData['role'] as String? ?? 'student',
+              ),
+            ),
+          );
 
         case 'pending':
           setState(() {
-            _errorMessage =
-                'Your account is pending approval. Please wait.';
+            _errorMessage = 'Your account is pending approval. Please wait.';
             _isLoading = false;
           });
 
@@ -88,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         default:
           setState(() {
-            _errorMessage = 'Unknown account status. Please contact support.';
+            _errorMessage = 'Unknown account. Please sign up first.';
             _isLoading = false;
           });
       }
@@ -122,6 +169,67 @@ class _LoginScreenState extends State<LoginScreen> {
       default:
         return 'Incorrect email or password. Please try again.';
     }
+  }
+
+  Future<void> _onForgotPasswordPressed() async {
+    final resetEmailController =
+        TextEditingController(text: _emailController.text.trim());
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              "Enter your email and we'll send you a reset link",
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: resetEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(hintText: 'Your email'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF185FA5),
+            ),
+            onPressed: () async {
+              final email = resetEmailController.text.trim();
+              Navigator.pop(ctx);
+              if (email.isEmpty) return;
+              try {
+                await FirebaseAuth.instance
+                    .sendPasswordResetEmail(email: email);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                      content: Text('Reset link sent to your email!')),
+                );
+              } on FirebaseAuthException catch (e) {
+                if (!mounted) return;
+                final msg = e.code == 'user-not-found'
+                    ? 'No account found with this email.'
+                    : 'Failed to send reset email. Please try again.';
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(SnackBar(content: Text(msg)));
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+
+    resetEmailController.dispose();
   }
 
   void _onBiometricPressed() {
@@ -165,8 +273,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              // ── Username ─────────────────────────────────────────────────
-              const Text('Username', style: AppTextStyles.label),
+              // ── Email ───────────────────────────────────────────────────
+              const Text('Email', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _emailController,
@@ -199,7 +307,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              // ── Forgot password ──────────────────────────────────────────
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _isLoading ? null : _onForgotPasswordPressed,
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF185FA5),
+                    textStyle: const TextStyle(fontSize: 12),
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Forgot password?'),
+                ),
+              ),
+              const SizedBox(height: 12),
 
               // ── Login ────────────────────────────────────────────────────
               ElevatedButton(
