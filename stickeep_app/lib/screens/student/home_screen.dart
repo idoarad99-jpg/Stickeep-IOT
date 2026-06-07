@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/admin_home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/screens/student/classroom_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -37,10 +38,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
 
-    final doc = await FirebaseFirestore.instance
-        .collection('students')
-        .doc(uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance.collection('students').doc(uid).get();
 
     if (!mounted || !doc.exists) return;
 
@@ -96,7 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Next reservation', style: AppTextStyles.sectionTitle),
+                  const Text('Next reservation',
+                      style: AppTextStyles.sectionTitle),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -133,7 +133,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ── New reservation ──────────────────────────────────────────────
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ClassroomScreen()),
+              ),
               child: const Text('🪑  New reservation'),
             ),
             const SizedBox(height: 10),
