@@ -31,20 +31,23 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
 
   Future<void> _confirm() async {
     setState(() => _isLoading = true);
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    await FirebaseFirestore.instance.collection('reservations').add({
+    final user = FirebaseAuth.instance.currentUser;
+    final uid = user?.uid ?? '';
+    final docRef =
+        await FirebaseFirestore.instance.collection('reservations').add({
       'classroomId': widget.classroom,
       'date': widget.date,
       'startTime': widget.timeStart,
       'endTime': widget.timeEnd,
       'seatNumber': widget.seatNumber,
+      'lessonName': widget.lessonName,
       'status': 'reserved',
       'userId': uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
     if (!mounted) return;
-    final email =
-        FirebaseAuth.instance.currentUser?.email ?? '';
+    final email = user?.email ?? '';
+    final studentName = user?.displayName ?? email;
     final time = '${widget.timeStart}–${widget.timeEnd}';
     final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
     Navigator.pushReplacement(
@@ -56,6 +59,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
           seat: '${widget.seatNumber}',
           date: widget.date,
           lesson: lesson,
+          reservationId: docRef.id,
+          studentName: studentName,
           time: time,
         ),
       ),
