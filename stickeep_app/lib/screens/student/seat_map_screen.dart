@@ -1,5 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/seat.dart';
 import 'package:stickeep_app/screens/student/confirm_screen.dart';
@@ -27,34 +26,37 @@ class SeatMapScreen extends StatefulWidget {
 
 class _SeatMapScreenState extends State<SeatMapScreen> {
   int? _selectedSeatId;
-  Map<int, SeatStatus> _seatStatuses = {};
 
-  // מושבים נגישים קבועים (ניתן לשנות לפי כיתה)
   final Set<int> _specialSeats = {1, 2, 3, 4};
 
-  late final DatabaseReference _seatsRef;
+  // Query reservations for this classroom + date that are active.
+  // Time-slot match is done in Dart because Firestore doesn't allow
+  // multiple inequality filters on different fields.
+  Stream<QuerySnapshot<Map<String, dynamic>>> get _reservationsStream =>
+      FirebaseFirestore.instance
+          .collection('reservations')
+          .where('classroomId', isEqualTo: widget.classroom)
+          .where('date', isEqualTo: widget.date)
+          .where('status', whereIn: ['reserved', 'occupied'])
+          .snapshots();
 
-  @override
-  void initState() {
-    super.initState();
-    final classroom = widget.classroom.replaceAll(' ', '_').toLowerCase();
-    _seatsRef = FirebaseDatabase.instance.ref('classrooms/$classroom/seats');
-    _initSeats();
-  }
-
-  // אם אין נתונים בענן — נאתחל 20 מושבים כ-free
-  Future<void> _initSeats() async {
-    final snapshot = await _seatsRef.get();
-    if (!snapshot.exists) {
-      final Map<String, dynamic> initial = {};
-      for (int i = 1; i <= 20; i++) {
-        initial['seat_$i'] = {
-          'status': 'free',
-          'is_special': _specialSeats.contains(i),
-        };
-      }
-      await _seatsRef.set(initial);
+  Map<int, SeatStatus> _buildSeatStatuses(
+      QuerySnapshot<Map<String, dynamic>> snapshot) {
+    final statuses = <int, SeatStatus>{};
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      // Only count reservations that overlap this exact time slot.
+      if (data['startTime'] != widget.timeStart ||
+          data['endTime'] != widget.timeEnd) continue;
+      final raw = data['seatNumber'];
+      if (raw == null) continue;
+      final id = raw is int ? raw : int.tryParse('$raw');
+      if (id == null) continue;
+      statuses[id] = data['status'] == 'occupied'
+          ? SeatStatus.occupied
+          : SeatStatus.reserved;
     }
+    return statuses;
   }
 
   @override
@@ -92,31 +94,23 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             ),
           ),
 
-          // ── Seat grid (StreamBuilder = real-time) ───────────────────────
+          // ── Seat grid (real-time via Firestore) ──────────────────────────
           Expanded(
-            child: StreamBuilder<DatabaseEvent>(
-              stream: _seatsRef.onValue,
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _reservationsStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
-                  final raw =
-                      snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                  _seatStatuses = {};
-                  raw.forEach((key, value) {
-                    final id = int.tryParse(key.toString().replaceAll('seat_', ''));
-                    if (id != null) {
-                      _seatStatuses[id] =
-                          Seat.fromJson(id, value as Map<dynamic, dynamic>).status;
-                    }
-                  });
-                }
+                final seatStatuses = snapshot.hasData
+                    ? _buildSeatStatuses(snapshot.data!)
+                    : <int, SeatStatus>{};
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 4,
                     mainAxisSpacing: 12,
                     crossAxisSpacing: 12,
@@ -126,7 +120,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                   itemBuilder: (context, index) {
                     final seatId = index + 1;
                     final status =
-                        _seatStatuses[seatId] ?? SeatStatus.free;
+                        seatStatuses[seatId] ?? SeatStatus.free;
                     final isSpecial = _specialSeats.contains(seatId);
                     final isSelected = _selectedSeatId == seatId;
                     final isAvailable = status == SeatStatus.free;
@@ -167,7 +161,6 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                             timeStart: widget.timeStart,
                             timeEnd: widget.timeEnd,
                             seatNumber: _selectedSeatId!,
-                            seatsRef: _seatsRef,
                           ),
                         ),
                       ),
@@ -196,11 +189,14 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
           ),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }
 }
+
 // ── Seat Widget ──────────────────────────────────────────────────────────────
 class _SeatWidget extends StatelessWidget {
   final int seatId;
