@@ -41,28 +41,39 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
 
       final seatId = seatIdFromClassroom(widget.classroom, widget.seatNumber);
 
-      // Check 1: duplicate reservation for same slot
-      final duplicate = await FirebaseFirestore.instance
-          .collection('reservations')
-          .where('userId', isEqualTo: uid)
-          .where('classroomId', isEqualTo: widget.classroom)
-          .where('date', isEqualTo: widget.date)
-          .where('startTime', isEqualTo: widget.timeStart)
-          .where('endTime', isEqualTo: widget.timeEnd)
-          .where('status', isEqualTo: 'reserved')
-          .limit(1)
+      // Read studentNumber first so it is guaranteed available for all writes
+      final studentDoc = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(uid)
           .get();
-      if (duplicate.docs.isNotEmpty) {
-        setState(() => _isLoading = false);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('You already have a reservation for this time slot')),
-        );
-        return;
+      final studentNumber =
+          (studentDoc.data()?['studentNumber'] ?? '').toString();
+
+      // Check 1: seat already reserved for this exact date+time slot
+      if (seatId != null) {
+        final existing = await FirebaseFirestore.instance
+            .collection('seats')
+            .doc(seatId)
+            .collection('reservations')
+            .where('date', isEqualTo: widget.date)
+            .where('startTime', isEqualTo: widget.timeStart)
+            .where('endTime', isEqualTo: widget.timeEnd)
+            .where('status', isEqualTo: 'reserved')
+            .limit(1)
+            .get();
+        if (existing.docs.isNotEmpty) {
+          setState(() => _isLoading = false);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content:
+                    Text('You already have a reservation for this time slot')),
+          );
+          return;
+        }
       }
 
-      // Check 2: seat still free (race condition guard)
+      // Check 2: seat still free in RTDB (race condition guard)
       final seatSnap = await widget.seatsRef
           .child('seat_${widget.seatNumber}')
           .get();
@@ -78,12 +89,6 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         );
         return;
       }
-
-      final studentDoc = await FirebaseFirestore.instance
-          .collection('students')
-          .doc(uid)
-          .get();
-      final studentNumber = studentDoc.data()?['studentNumber'] ?? '';
 
       await widget.seatsRef
           .child('seat_' + widget.seatNumber.toString())
@@ -132,6 +137,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
           'startTime': widget.timeStart,
           'endTime': widget.timeEnd,
           'date': widget.date,
+          'classroomId': widget.classroom,
           'reservationId': firestoreRef.id,
           'updatedAt': FieldValue.serverTimestamp(),
         });
