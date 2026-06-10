@@ -6,6 +6,22 @@ import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/classroom_screen.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+DateTime _parseDate(String d) {
+  final p = d.split('.');
+  if (p.length != 3) return DateTime(2000);
+  return DateTime(int.parse(p[2]), int.parse(p[1]), int.parse(p[0]));
+}
+
+String _dateLabel(String dateStr) {
+  final date = _parseDate(dateStr);
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  if (date == today) return 'Today';
+  if (date == today.add(const Duration(days: 1))) return 'Tomorrow';
+  return dateStr;
+}
+
 class HomeScreen extends StatefulWidget {
   final String userName;
   final String userRole;
@@ -86,43 +102,7 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Next reservation card ────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Next reservation',
-                      style: AppTextStyles.sectionTitle),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.blueLight,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 20,
-                          color: AppColors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'No upcoming reservations',
-                        style: AppTextStyles.cardSubtitle,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            _NextReservationCard(uid: FirebaseAuth.instance.currentUser?.uid ?? ''),
             const SizedBox(height: 24),
 
             // ── Section title ────────────────────────────────────────────────
@@ -215,6 +195,147 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ── Next Reservation Card ─────────────────────────────────────────────────────
+class _NextReservationCard extends StatelessWidget {
+  final String uid;
+  const _NextReservationCard({required this.uid});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('reservations')
+          .where('userId', isEqualTo: uid)
+          .where('status', isEqualTo: 'reserved')
+          .snapshots(),
+      builder: (context, snapshot) {
+        // Determine the nearest upcoming reservation (client-side sort).
+        Map<String, dynamic>? next;
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final today = DateTime.now();
+          final todayDate = DateTime(today.year, today.month, today.day);
+          final docs = snapshot.data!.docs
+              .map((d) => d.data())
+              .where((d) {
+                final date = _parseDate(d['date'] as String? ?? '');
+                return !date.isBefore(todayDate);
+              })
+              .toList()
+            ..sort((a, b) => _parseDate(a['date'] as String? ?? '')
+                .compareTo(_parseDate(b['date'] as String? ?? '')));
+          if (docs.isNotEmpty) next = docs.first;
+        }
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Next reservation', style: AppTextStyles.sectionTitle),
+              const SizedBox(height: 12),
+              next == null
+                  ? Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.blueLight,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.calendar_today_outlined,
+                              size: 20, color: AppColors.blue),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text('No upcoming reservations',
+                            style: AppTextStyles.cardSubtitle),
+                      ],
+                    )
+                  : _ReservationSummary(data: next),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ReservationSummary extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _ReservationSummary({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final lesson = (data['lessonName'] as String? ?? '').isEmpty
+        ? 'Lesson'
+        : data['lessonName'] as String;
+    final classroom = data['classroomId'] as String? ?? '';
+    final seat = data['seatNumber']?.toString() ?? '—';
+    final start = data['startTime'] as String? ?? '';
+    final end = data['endTime'] as String? ?? '';
+    final time = end.isEmpty ? start : '$start–$end';
+    final dateStr = data['date'] as String? ?? '';
+    final label = _dateLabel(dateStr);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.blueLight,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.calendar_today_outlined,
+              size: 20, color: AppColors.blue),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                lesson,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$classroom  •  Seat $seat  •  $time',
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.greenLight,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppColors.green,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

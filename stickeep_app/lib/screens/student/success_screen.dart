@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
+import 'package:stickeep_app/screens/student/scanner_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
 class SuccessScreen extends StatefulWidget {
@@ -9,6 +10,8 @@ class SuccessScreen extends StatefulWidget {
   final String date;
   final String lesson;
   final String time;
+  final String reservationId;
+  final String studentName;
 
   const SuccessScreen({
     super.key,
@@ -18,6 +21,8 @@ class SuccessScreen extends StatefulWidget {
     required this.date,
     required this.lesson,
     required this.time,
+    required this.reservationId,
+    required this.studentName,
   });
 
   @override
@@ -185,6 +190,26 @@ class _SuccessScreenState extends State<SuccessScreen>
               ),
             ),
             const SizedBox(height: 32),
+
+            // ── Scan on arrival ──────────────────────────────────────────────
+            ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ScannerScreen(
+                    classroom: widget.classroom,
+                    studentName: widget.studentName,
+                    reservationId: widget.reservationId,
+                  ),
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.green,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('📲  Scan on arrival'),
+            ),
+            const SizedBox(height: 12),
 
             // ── View my reservations ─────────────────────────────────────────
             ElevatedButton(
