@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/admin_home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/classroom_screen.dart';
+import 'package:stickeep_app/screens/student/reservations_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -143,14 +144,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ── My reservations ──────────────────────────────────────────────
             OutlinedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationsScreen(showUpcoming: true))),
               child: const Text('📅  My reservations'),
             ),
             const SizedBox(height: 10),
-
             // ── Reservation history ──────────────────────────────────────────
             OutlinedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationsScreen(showUpcoming: false))),
               child: const Text('🕐  Reservation history'),
             ),
 
