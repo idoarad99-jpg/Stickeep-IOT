@@ -38,6 +38,44 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Not logged in');
 
+      // Check 1: duplicate reservation for same slot
+      final duplicate = await FirebaseFirestore.instance
+          .collection('reservations')
+          .where('userId', isEqualTo: uid)
+          .where('classroomId', isEqualTo: widget.classroom)
+          .where('date', isEqualTo: widget.date)
+          .where('startTime', isEqualTo: widget.timeStart)
+          .where('endTime', isEqualTo: widget.timeEnd)
+          .where('status', isEqualTo: 'reserved')
+          .limit(1)
+          .get();
+      if (duplicate.docs.isNotEmpty) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('You already have a reservation for this time slot')),
+        );
+        return;
+      }
+
+      // Check 2: seat still free (race condition guard)
+      final seatSnap = await widget.seatsRef
+          .child('seat_${widget.seatNumber}')
+          .get();
+      final currentStatus =
+          (seatSnap.value as Map<dynamic, dynamic>?)?['status'] as String?;
+      if (currentStatus != 'free') {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Sorry, this seat was just taken. Please choose another.')),
+        );
+        return;
+      }
+
       final studentDoc = await FirebaseFirestore.instance
           .collection('students')
           .doc(uid)
