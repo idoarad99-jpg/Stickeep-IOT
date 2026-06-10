@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -37,6 +38,12 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Not logged in');
 
+      final studentDoc = await FirebaseFirestore.instance
+          .collection('students')
+          .doc(uid)
+          .get();
+      final studentNumber = studentDoc.data()?['studentNumber'] ?? '';
+
       await widget.seatsRef
           .child('seat_' + widget.seatNumber.toString())
           .update({'status': 'reserved'});
@@ -52,6 +59,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'time_start': widget.timeStart,
         'time_end': widget.timeEnd,
         'seat_number': widget.seatNumber,
+        'student_number': studentNumber,
         'is_upcoming': true,
         'created_at': DateTime.now().toIso8601String(),
       });
