@@ -64,6 +64,21 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'created_at': DateTime.now().toIso8601String(),
       });
 
+      final firestoreRef = await FirebaseFirestore.instance
+          .collection('reservations')
+          .add({
+        'classroomId': widget.classroom,
+        'lessonName': widget.lessonName,
+        'date': widget.date,
+        'startTime': widget.timeStart,
+        'endTime': widget.timeEnd,
+        'seatNumber': widget.seatNumber,
+        'status': 'reserved',
+        'userId': uid,
+        'studentNumber': studentNumber,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       if (!mounted) return;
 
       final email = FirebaseAuth.instance.currentUser?.email ?? '';
@@ -80,7 +95,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
             date: widget.date,
             lesson: lesson,
             time: time,
-            reservationId: reservationRef.key ?? '',
+            reservationId: firestoreRef.id,
             studentName: email,
           ),
         ),
