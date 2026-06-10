@@ -72,6 +72,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
             date: widget.date,
             lesson: lesson,
             time: time,
+            reservationId: reservationRef.key ?? '',
+            studentName: email,
           ),
         ),
       );

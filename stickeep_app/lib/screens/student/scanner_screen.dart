@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/screens/student/home_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
   final String classroom;
@@ -109,6 +110,14 @@ class _ScannerScreenState extends State<ScannerScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.home_outlined),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
+            (route) => false,
+          ),
+        ),
         backgroundColor: AppColors.blue,
         title: const Text('Scan sticker'),
       ),

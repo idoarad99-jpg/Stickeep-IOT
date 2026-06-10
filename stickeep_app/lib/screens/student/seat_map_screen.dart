@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/seat.dart';
 import 'package:stickeep_app/screens/student/confirm_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/screens/student/home_screen.dart';
 
 class SeatMapScreen extends StatefulWidget {
   final String classroom;
@@ -56,6 +57,14 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.home_outlined),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
+            (route) => false,
+          ),
+        ),
         title: Text(widget.classroom),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),

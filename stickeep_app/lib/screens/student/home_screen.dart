@@ -1,3 +1,4 @@
+import 'package:stickeep_app/screens/student/report_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -160,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ── Report an issue ──────────────────────────────────────────────
             OutlinedButton(
-              onPressed: () {},
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen())),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.red,
                 side: const BorderSide(color: AppColors.red),

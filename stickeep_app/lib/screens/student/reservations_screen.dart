@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
+import 'package:stickeep_app/screens/student/home_screen.dart';
 
 class ReservationsScreen extends StatelessWidget {
   final bool showUpcoming;
@@ -24,6 +25,14 @@ class ReservationsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.home_outlined),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
+            (route) => false,
+          ),
+        ),
         title: Text(showUpcoming ? 'My Reservations' : 'Reservation History'),
       ),
       body: StreamBuilder<DatabaseEvent>(

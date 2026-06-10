@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/seat_map_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/screens/student/home_screen.dart';
 
 class ClassroomScreen extends StatefulWidget {
   const ClassroomScreen({super.key});
@@ -65,7 +66,15 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('New Reservation')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.home_outlined),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
+            (route) => false,
+          ),
+        ),title: const Text('New Reservation')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
