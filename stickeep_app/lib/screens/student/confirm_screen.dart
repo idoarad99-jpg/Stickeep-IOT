@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/success_screen.dart';
@@ -11,6 +11,7 @@ class ConfirmScreen extends StatefulWidget {
   final String timeStart;
   final String timeEnd;
   final int seatNumber;
+  final DatabaseReference seatsRef;
 
   const ConfirmScreen({
     super.key,
@@ -20,6 +21,7 @@ class ConfirmScreen extends StatefulWidget {
     required this.timeStart,
     required this.timeEnd,
     required this.seatNumber,
+    required this.seatsRef,
   });
 
   @override
@@ -31,42 +33,60 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
 
   Future<void> _confirm() async {
     setState(() => _isLoading = true);
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    await FirebaseFirestore.instance.collection('reservations').add({
-      'classroomId': widget.classroom,
-      'date': widget.date,
-      'startTime': widget.timeStart,
-      'endTime': widget.timeEnd,
-      'seatNumber': widget.seatNumber,
-      'status': 'reserved',
-      'userId': uid,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-    if (!mounted) return;
-    final email =
-        FirebaseAuth.instance.currentUser?.email ?? '';
-    final time = '${widget.timeStart}–${widget.timeEnd}';
-    final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => SuccessScreen(
-          email: email,
-          classroom: widget.classroom,
-          seat: '${widget.seatNumber}',
-          date: widget.date,
-          lesson: lesson,
-          time: time,
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) throw Exception('Not logged in');
+
+      await widget.seatsRef
+          .child('seat_' + widget.seatNumber.toString())
+          .update({'status': 'reserved'});
+
+      final reservationRef = FirebaseDatabase.instance
+          .ref('reservations/' + uid)
+          .push();
+
+      await reservationRef.set({
+        'classroom': widget.classroom,
+        'lesson_name': widget.lessonName,
+        'date': widget.date,
+        'time_start': widget.timeStart,
+        'time_end': widget.timeEnd,
+        'seat_number': widget.seatNumber,
+        'is_upcoming': true,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      if (!mounted) return;
+
+      final email = FirebaseAuth.instance.currentUser?.email ?? '';
+      final time = widget.timeStart + '–' + widget.timeEnd;
+      final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SuccessScreen(
+            email: email,
+            classroom: widget.classroom,
+            seat: widget.seatNumber.toString(),
+            date: widget.date,
+            lesson: lesson,
+            time: time,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final time = '${widget.timeStart}–${widget.timeEnd}';
-    final lesson =
-        widget.lessonName.isEmpty ? '—' : widget.lessonName;
+    final time = widget.timeStart + '–' + widget.timeEnd;
+    final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -80,8 +100,6 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 8),
-
-            // ── Checkmark icon ───────────────────────────────────────────────
             Center(
               child: Container(
                 width: 44,
@@ -90,16 +108,10 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                   color: AppColors.greenLight,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.check,
-                  size: 24,
-                  color: AppColors.green,
-                ),
+                child: const Icon(Icons.check, size: 24, color: AppColors.green),
               ),
             ),
             const SizedBox(height: 16),
-
-            // ── Heading ──────────────────────────────────────────────────────
             const Text(
               'Almost done!',
               textAlign: TextAlign.center,
@@ -113,14 +125,9 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
             const Text(
               'Please review your reservation',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
-
-            // ── Summary card ─────────────────────────────────────────────────
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -135,15 +142,13 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                   _InfoRow(label: 'Time', value: time),
                   _InfoRow(
                     label: 'Seat',
-                    value: '${widget.seatNumber}',
+                    value: widget.seatNumber.toString(),
                     valueColor: AppColors.blue,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 32),
-
-            // ── Confirm button ───────────────────────────────────────────────
             ElevatedButton(
               onPressed: _isLoading ? null : _confirm,
               child: _isLoading
@@ -158,11 +163,9 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                   : const Text('Confirm reservation'),
             ),
             const SizedBox(height: 12),
-
-            // ── Edit button ──────────────────────────────────────────────────
             OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('✏️  Edit — back to step 4'),
+              child: const Text('Edit — back to step 4'),
             ),
           ],
         ),
@@ -189,21 +192,15 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: valueColor ?? AppColors.textPrimary,
-            ),
-          ),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: AppColors.textSecondary)),
+          Text(value,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: valueColor ?? AppColors.textPrimary,
+              )),
         ],
       ),
     );

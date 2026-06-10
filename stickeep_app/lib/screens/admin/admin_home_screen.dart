@@ -4,7 +4,6 @@ import 'package:stickeep_app/screens/admin/all_users_screen.dart';
 import 'package:stickeep_app/screens/admin/pending_users_screen.dart';
 import 'package:stickeep_app/screens/admin/reports_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
-
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
