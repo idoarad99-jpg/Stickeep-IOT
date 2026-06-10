@@ -6,6 +6,7 @@ import 'package:stickeep_app/screens/admin/admin_home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/classroom_screen.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
+import 'package:stickeep_app/screens/student/scanner_screen.dart';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 DateTime _parseDate(String d) {
@@ -50,6 +51,42 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_userName.isEmpty || _userRole.isEmpty) {
       _fetchProfileFromFirestore();
     }
+  }
+
+  Future<void> _scanOnArrival() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final query = await FirebaseFirestore.instance
+        .collection('reservations')
+        .where('userId', isEqualTo: uid)
+        .where('status', isEqualTo: 'reserved')
+        .limit(1)
+        .get();
+
+    if (!mounted) return;
+
+    if (query.docs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No active reservation found')),
+      );
+      return;
+    }
+
+    final doc = query.docs.first;
+    final data = doc.data();
+    final classroom = data['classroomId'] as String? ?? '';
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ScannerScreen(
+          classroom: classroom,
+          studentName: _userName,
+          reservationId: doc.id,
+        ),
+      ),
+    );
   }
 
   Future<void> _fetchProfileFromFirestore() async {
@@ -129,6 +166,18 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('📅  My reservations'),
             ),
             const SizedBox(height: 10),
+
+            // ── Scan sticker ─────────────────────────────────────────────────
+            OutlinedButton(
+              onPressed: _scanOnArrival,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFE0E0E0)),
+                backgroundColor: Colors.white,
+              ),
+              child: const Text('📱 Scan sticker on arrival'),
+            ),
+            const SizedBox(height: 10),
+
             // ── Reservation history ──────────────────────────────────────────
             OutlinedButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationsScreen(showUpcoming: false))),
