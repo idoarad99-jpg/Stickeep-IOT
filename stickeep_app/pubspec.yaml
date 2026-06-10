@@ -49,6 +49,9 @@ dependencies:
   # אייקונים
   cupertino_icons: ^1.0.6
 
+  # שמירת מצב
+  shared_preferences: ^2.3.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

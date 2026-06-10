@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickeep_app/screens/auth/signup_screen.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final String initialEmail;
+
+  const LoginScreen({super.key, this.initialEmail = ''});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,7 +20,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _rememberMe = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialEmail.isNotEmpty) {
+      _emailController.text = widget.initialEmail;
+      _rememberMe = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -27,6 +40,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // ── Auth logic ────────────────────────────────────────────────────────────
+
+  Future<void> _saveOrClearRememberMe(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_rememberMe) {
+      await prefs.setString('saved_email', email);
+    } else {
+      await prefs.remove('saved_email');
+    }
+  }
 
   Future<void> _onLoginPressed() async {
     final email = _emailController.text.trim();
@@ -64,6 +86,9 @@ class _LoginScreenState extends State<LoginScreen> {
         final userName = data['name'] as String? ?? 'User';
         final userRole = data['role'] as String? ?? 'student';
         print('[LoginScreen] role from Firestore: "$userRole"');
+
+        await _saveOrClearRememberMe(email);
+        if (!mounted) return;
 
         Navigator.pushReplacement(
           context,
@@ -108,6 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
             'email': reqData['email'] ?? email,
           });
 
+          await _saveOrClearRememberMe(email);
           if (!mounted) return;
 
           Navigator.pushReplacement(
@@ -322,7 +348,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('Forgot password?'),
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 4),
+
+              // ── Remember me ──────────────────────────────────────────────
+              Row(
+                children: [
+                  Checkbox(
+                    value: _rememberMe,
+                    onChanged: (v) =>
+                        setState(() => _rememberMe = v ?? false),
+                    activeColor: const Color(0xFF185FA5),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  const Text(
+                    'Remember me',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
 
               // ── Login ────────────────────────────────────────────────────
               ElevatedButton(

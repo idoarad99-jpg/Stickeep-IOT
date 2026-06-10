@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickeep_app/screens/auth/login_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
@@ -17,18 +18,23 @@ void main() async {
     ),
   );
 
-  runApp(const MyApp());
+  final prefs = await SharedPreferences.getInstance();
+  final savedEmail = prefs.getString('saved_email') ?? '';
+
+  runApp(MyApp(initialEmail: savedEmail));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialEmail;
+
+  const MyApp({super.key, this.initialEmail = ''});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Stickeep',
       theme: AppTheme.theme,
-      home: const LoginScreen(),
+      home: LoginScreen(initialEmail: initialEmail),
     );
   }
 }
