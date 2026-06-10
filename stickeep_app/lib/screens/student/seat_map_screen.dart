@@ -1,9 +1,12 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/seat.dart';
 import 'package:stickeep_app/screens/student/confirm_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
+import 'package:stickeep_app/utils/seat_id.dart';
 
 class SeatMapScreen extends StatefulWidget {
   final String classroom;
@@ -28,8 +31,10 @@ class SeatMapScreen extends StatefulWidget {
 class _SeatMapScreenState extends State<SeatMapScreen> {
   int? _selectedSeatId;
   Map<int, SeatStatus> _seatStatuses = {};
+  Map<int, SeatStatus> _firestoreSeatStatuses = {};
   final Set<int> _specialSeats = {1, 2, 3, 4};
   late final DatabaseReference _seatsRef;
+  StreamSubscription<QuerySnapshot>? _fsSubscription;
 
   @override
   void initState() {
@@ -37,6 +42,42 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     final classroom = widget.classroom.replaceAll(' ', '_').toLowerCase();
     _seatsRef = FirebaseDatabase.instance.ref('classrooms/$classroom/seats');
     _initSeats();
+    _listenFirestoreSeats();
+  }
+
+  void _listenFirestoreSeats() {
+    final ids = seatIdsForClassroom(widget.classroom);
+    if (ids.isEmpty) return;
+    _fsSubscription = FirebaseFirestore.instance
+        .collection('seats')
+        .where(FieldPath.documentId, whereIn: ids)
+        .snapshots()
+        .listen((snap) {
+      final updated = <int, SeatStatus>{};
+      for (final doc in snap.docs) {
+        final data = doc.data();
+        final seatNumber = int.tryParse(doc.id.split('_').last) ?? 0;
+        if (seatNumber == 0) continue;
+        if (data['date'] == widget.date &&
+            data['startTime'] == widget.timeStart &&
+            data['endTime'] == widget.timeEnd) {
+          final s = data['status'] as String? ?? 'free';
+          updated[seatNumber] = s == 'occupied'
+              ? SeatStatus.occupied
+              : s == 'reserved'
+                  ? SeatStatus.reserved
+                  : SeatStatus.free;
+        }
+        // Date/time doesn't match → seat is free for this slot
+      }
+      if (mounted) setState(() => _firestoreSeatStatuses = updated);
+    });
+  }
+
+  @override
+  void dispose() {
+    _fsSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _initSeats() async {
@@ -128,8 +169,11 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                   itemCount: 20,
                   itemBuilder: (context, index) {
                     final seatId = index + 1;
-                    final status =
-                        _seatStatuses[seatId] ?? SeatStatus.free;
+                    // Sticker seats (1–4): use Firestore with date+time filter.
+                    // Regular seats (5–20): use RTDB status.
+                    final status = _specialSeats.contains(seatId)
+                        ? (_firestoreSeatStatuses[seatId] ?? SeatStatus.free)
+                        : (_seatStatuses[seatId] ?? SeatStatus.free);
                     final isSpecial = _specialSeats.contains(seatId);
                     final isSelected = _selectedSeatId == seatId;
                     final isAvailable = status == SeatStatus.free;

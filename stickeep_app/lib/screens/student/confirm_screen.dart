@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/success_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/seat_id.dart';
 
 class ConfirmScreen extends StatefulWidget {
   final String classroom;
@@ -37,6 +38,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Not logged in');
+
+      final seatId = seatIdFromClassroom(widget.classroom, widget.seatNumber);
 
       // Check 1: duplicate reservation for same slot
       final duplicate = await FirebaseFirestore.instance
@@ -98,6 +101,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'time_end': widget.timeEnd,
         'seat_number': widget.seatNumber,
         'student_number': studentNumber,
+        'seat_id': seatId ?? '',
         'is_upcoming': true,
         'created_at': DateTime.now().toIso8601String(),
       });
@@ -114,8 +118,37 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'status': 'reserved',
         'userId': uid,
         'studentNumber': studentNumber,
+        'seatId': seatId ?? '',
         'createdAt': FieldValue.serverTimestamp(),
       });
+
+      // Write to seats collection (read by ESP32 + seat map)
+      if (seatId != null) {
+        final seatDocRef =
+            FirebaseFirestore.instance.collection('seats').doc(seatId);
+        await seatDocRef.set({
+          'status': 'reserved',
+          'studentNumber': studentNumber,
+          'startTime': widget.timeStart,
+          'endTime': widget.timeEnd,
+          'date': widget.date,
+          'reservationId': firestoreRef.id,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+        await seatDocRef
+            .collection('reservations')
+            .doc(firestoreRef.id)
+            .set({
+          'studentNumber': studentNumber,
+          'userId': uid,
+          'date': widget.date,
+          'startTime': widget.timeStart,
+          'endTime': widget.timeEnd,
+          'classroomId': widget.classroom,
+          'status': 'reserved',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
 
       if (!mounted) return;
 

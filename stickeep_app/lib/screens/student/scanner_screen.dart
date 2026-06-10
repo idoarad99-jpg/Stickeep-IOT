@@ -75,15 +75,31 @@ class _ScannerScreenState extends State<ScannerScreen>
           .doc(widget.reservationId);
       await docRef.update({'status': 'arrived'});
 
-      // Fetch seatNumber from the reservation to update RTDB seat status.
+      // Fetch reservation doc to update RTDB seat and Firestore seats collection.
       final doc = await docRef.get();
       if (doc.exists) {
-        final seatNumber = doc.data()?['seatNumber'];
+        final data = doc.data()!;
+        final seatNumber = data['seatNumber'];
         if (seatNumber != null) {
           final classroomKey =
               widget.classroom.replaceAll(' ', '_').toLowerCase();
           await FirebaseDatabase.instance
               .ref('classrooms/$classroomKey/seats/seat_$seatNumber')
+              .update({'status': 'occupied'});
+        }
+
+        // Update Firestore seats collection
+        final seatId = data['seatId'] as String?;
+        if (seatId != null && seatId.isNotEmpty) {
+          final seatDocRef =
+              FirebaseFirestore.instance.collection('seats').doc(seatId);
+          await seatDocRef.update({
+            'status': 'occupied',
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+          await seatDocRef
+              .collection('reservations')
+              .doc(widget.reservationId)
               .update({'status': 'occupied'});
         }
       }
