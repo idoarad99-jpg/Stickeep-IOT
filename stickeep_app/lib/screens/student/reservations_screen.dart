@@ -29,32 +29,14 @@ class ReservationsScreen extends StatelessWidget {
       body: StreamBuilder<DatabaseEvent>(
         stream: ref.onValue,
         builder: (context, snapshot) {
-          // ── Loading ──────────────────────────────────────────────────
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // ── Empty ────────────────────────────────────────────────────
           if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.calendar_today_outlined,
-                      size: 48, color: AppColors.border),
-                  const SizedBox(height: 16),
-                  Text(
-                    showUpcoming
-                        ? 'No upcoming reservations'
-                        : 'No past reservations',
-                    style: AppTextStyles.cardSubtitle,
-                  ),
-                ],
-              ),
-            );
+            return _emptyState();
           }
 
-          // ── Parse reservations ───────────────────────────────────────
           final raw = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
 
           final reservations = raw.entries
@@ -64,26 +46,8 @@ class ReservationsScreen extends StatelessWidget {
               .toList()
             ..sort((a, b) => a.date.compareTo(b.date));
 
-          if (reservations.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.calendar_today_outlined,
-                      size: 48, color: AppColors.border),
-                  const SizedBox(height: 16),
-                  Text(
-                    showUpcoming
-                        ? 'No upcoming reservations'
-                        : 'No past reservations',
-                    style: AppTextStyles.cardSubtitle,
-                  ),
-                ],
-              ),
-            );
-          }
+          if (reservations.isEmpty) return _emptyState();
 
-          // ── List ─────────────────────────────────────────────────────
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: reservations.length,
@@ -98,6 +62,23 @@ class ReservationsScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.calendar_today_outlined,
+              size: 48, color: AppColors.border),
+          const SizedBox(height: 16),
+          Text(
+            showUpcoming ? 'No upcoming reservations' : 'No past reservations',
+            style: AppTextStyles.cardSubtitle,
+          ),
+        ],
       ),
     );
   }

@@ -1,4 +1,5 @@
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/success_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
@@ -10,7 +11,6 @@ class ConfirmScreen extends StatefulWidget {
   final String timeStart;
   final String timeEnd;
   final int seatNumber;
-  final DatabaseReference seatsRef;
 
   const ConfirmScreen({
     super.key,
@@ -20,7 +20,6 @@ class ConfirmScreen extends StatefulWidget {
     required this.timeStart,
     required this.timeEnd,
     required this.seatNumber,
-    required this.seatsRef,
   });
 
   @override
@@ -32,13 +31,34 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
 
   Future<void> _confirm() async {
     setState(() => _isLoading = true);
-    await widget.seatsRef
-        .child('seat_${widget.seatNumber}')
-        .update({'status': 'reserved'});
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    await FirebaseFirestore.instance.collection('reservations').add({
+      'classroomId': widget.classroom,
+      'date': widget.date,
+      'startTime': widget.timeStart,
+      'endTime': widget.timeEnd,
+      'seatNumber': widget.seatNumber,
+      'status': 'reserved',
+      'userId': uid,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
     if (!mounted) return;
+    final email =
+        FirebaseAuth.instance.currentUser?.email ?? '';
+    final time = '${widget.timeStart}–${widget.timeEnd}';
+    final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const SuccessScreen()),
+      MaterialPageRoute(
+        builder: (_) => SuccessScreen(
+          email: email,
+          classroom: widget.classroom,
+          seat: '${widget.seatNumber}',
+          date: widget.date,
+          lesson: lesson,
+          time: time,
+        ),
+      ),
     );
   }
 
