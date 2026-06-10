@@ -189,6 +189,29 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: const Text('⚠️  Report an issue'),
             ),
+
+            // ── TEMP: Admin Panel shortcut (remove before release) ───────────
+            const SizedBox(height: 24),
+            const Divider(color: AppColors.border),
+            const SizedBox(height: 8),
+            const Text(
+              'DEV ONLY',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 44),
+              ),
+              child: const Text('🔧  Admin Panel (temp)'),
+            ),
           ],
         ),
       ),
