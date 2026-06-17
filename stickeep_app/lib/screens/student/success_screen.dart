@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
 import 'package:stickeep_app/screens/student/scanner_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
@@ -190,41 +189,7 @@ class _SuccessScreenState extends State<SuccessScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            // ── QR code ──────────────────────────────────────────────────────
-            const Text(
-              'Show this QR code to confirm arrival',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: QrImageView(
-                  data: widget.reservationId,
-                  version: QrVersions.auto,
-                  size: 160,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
 
             // ── Scan on arrival ──────────────────────────────────────────────
             ElevatedButton(

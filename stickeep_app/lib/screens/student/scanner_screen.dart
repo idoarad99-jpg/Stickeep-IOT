@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -24,11 +25,6 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-
-  // Scan line moves top→bottom inside the dark box.
-  // Bounce drives the dog emoji after success.
-  // Both share the same controller — scan line runs before scan,
-  // bounce runs after (controller is reset with a shorter duration).
   late Animation<double> _scanLineY;
   late Animation<double> _bounceY;
 
@@ -36,9 +32,14 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   bool _scanned = false;
   bool _isLoading = false;
+  bool _cameraReady = false;
+  bool _cameraError = false;
+  Timer? _cameraTimeout;
 
   static const _scanDuration = Duration(milliseconds: 1400);
   static const _bounceDuration = Duration(milliseconds: 600);
+  static const _cameraErrorMessage =
+      'Camera failed to start. Please check camera permissions and refresh.';
 
   static const _steps = [
     (1, 'Find the sticker on your reserved seat'),
@@ -50,21 +51,52 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   void initState() {
     super.initState();
+    debugPrint('[Scanner] initState — creating MobileScannerController');
     _cameraController = MobileScannerController();
+    debugPrint('[Scanner] MobileScannerController created');
+
     _controller = AnimationController(vsync: this, duration: _scanDuration)
       ..repeat(reverse: true);
     _buildAnimations();
+
+    _startCamera();
+  }
+
+  Future<void> _startCamera() async {
+    // Fail-safe: if camera never signals ready within 5 s, show error.
+    _cameraTimeout = Timer(const Duration(seconds: 5), () {
+      if (mounted && !_cameraReady) {
+        debugPrint('[Scanner] Timeout — camera did not start within 5 seconds');
+        setState(() => _cameraError = true);
+      }
+    });
+
+    try {
+      debugPrint('[Scanner] Calling _cameraController.start()');
+      await _cameraController.start();
+      debugPrint('[Scanner] _cameraController.start() completed');
+      _cameraTimeout?.cancel();
+      if (mounted) {
+        setState(() => _cameraReady = true);
+        debugPrint('[Scanner] Camera marked ready');
+      }
+    } catch (e) {
+      debugPrint('[Scanner] Camera start error: $e');
+      _cameraTimeout?.cancel();
+      if (mounted) setState(() => _cameraError = true);
+    }
   }
 
   void _buildAnimations() {
     final curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
-    // Scan line travels between y=12 and y=132 inside the 160-height box.
-    _scanLineY = Tween<double>(begin: 12, end: 132).animate(curve);
+    // Scan line travels between y=12 and y=180 inside the 200-height box.
+    _scanLineY = Tween<double>(begin: 12, end: 180).animate(curve);
     _bounceY = Tween<double>(begin: 0, end: -14).animate(curve);
   }
 
   @override
   void dispose() {
+    _cameraTimeout?.cancel();
     _cameraController.dispose();
     _controller.dispose();
     super.dispose();
@@ -72,28 +104,32 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   void _onQrDetect(BarcodeCapture capture) {
     if (_scanned || _isLoading) return;
-    final value = capture.barcodes.firstOrNull?.rawValue ?? '';
+    final value = capture.barcodes.first.rawValue ?? '';
+    debugPrint('[Scanner] QR detected: "$value" | expected: "${widget.reservationId}"');
     if (value.isEmpty) return;
     if (value == widget.reservationId) {
-      _simulateScan();
+      _confirmArrival();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('QR code does not match your reservation')),
+        const SnackBar(
+          content: Text("QR code doesn't match. Please try again."),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  Future<void> _simulateScan() async {
+  Future<void> _confirmArrival() async {
+    debugPrint('[Scanner] Match! Confirming arrival for ${widget.reservationId}');
     setState(() => _isLoading = true);
 
     try {
-      // Mark the Firestore reservation as arrived.
       final docRef = FirebaseFirestore.instance
           .collection('reservations')
           .doc(widget.reservationId);
       await docRef.update({'status': 'arrived'});
+      debugPrint('[Scanner] Firestore reservation updated to arrived');
 
-      // Fetch reservation doc to update RTDB seat and Firestore seats collection.
       final doc = await docRef.get();
       if (doc.exists) {
         final data = doc.data()!;
@@ -104,9 +140,9 @@ class _ScannerScreenState extends State<ScannerScreen>
           await FirebaseDatabase.instance
               .ref('classrooms/$classroomKey/seats/seat_$seatNumber')
               .update({'status': 'occupied'});
+          debugPrint('[Scanner] RTDB seat updated to occupied');
         }
 
-        // Update Firestore seats collection
         final seatId = data['seatId'] as String?;
         if (seatId != null && seatId.isNotEmpty) {
           final seatDocRef =
@@ -119,17 +155,20 @@ class _ScannerScreenState extends State<ScannerScreen>
               .collection('reservations')
               .doc(widget.reservationId)
               .update({'status': 'occupied'});
+          debugPrint('[Scanner] Firestore seats collection updated to occupied');
         }
       }
-    } catch (_) {
-      // Show success UI regardless — scan simulation should not block UX.
+    } catch (e) {
+      debugPrint('[Scanner] Firebase update error (non-fatal): $e');
+      // Show success UI regardless — arrival confirmation should not block UX.
     }
 
     if (!mounted) return;
 
     _cameraController.stop();
+    debugPrint('[Scanner] Camera stopped');
 
-    // Switch controller to bounce speed before showing success box.
+    // Switch animation controller to bounce speed for the success dog.
     _controller.stop();
     _controller.duration = _bounceDuration;
     _buildAnimations();
@@ -150,7 +189,9 @@ class _ScannerScreenState extends State<ScannerScreen>
           icon: const Icon(Icons.home_outlined),
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
+            MaterialPageRoute(
+                builder: (_) =>
+                    const HomeScreen(userName: '', userRole: '')),
             (route) => false,
           ),
         ),
@@ -164,7 +205,7 @@ class _ScannerScreenState extends State<ScannerScreen>
           children: [
             const SizedBox(height: 8),
 
-            // ── Scanner box / Success box ─────────────────────────────────────
+            // ── Scanner box / Success box ──────────────────────────────────────
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 400),
               child: _scanned
@@ -179,12 +220,14 @@ class _ScannerScreenState extends State<ScannerScreen>
                       scanLineY: _scanLineY,
                       onDetect: _onQrDetect,
                       controller: _cameraController,
+                      cameraReady: _cameraReady,
+                      cameraError: _cameraError,
                     ),
             ),
 
             const SizedBox(height: 24),
 
-            // ── How to scan ──────────────────────────────────────────────────
+            // ── How to scan ────────────────────────────────────────────────────
             const Text(
               'How to scan:',
               style: TextStyle(
@@ -195,24 +238,6 @@ class _ScannerScreenState extends State<ScannerScreen>
             ),
             const SizedBox(height: 12),
             ..._steps.map((s) => _StepRow(number: s.$1, text: s.$2)),
-
-            const SizedBox(height: 24),
-
-            // ── Simulate button (hidden after scan) ──────────────────────────
-            if (!_scanned)
-              ElevatedButton(
-                onPressed: _isLoading ? null : _simulateScan,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text('Simulate successful scan'),
-              ),
           ],
         ),
       ),
@@ -220,32 +245,76 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 }
 
-// ── Scanner box ──────────────────────────────────────────────────────────────
+// ── Scanner box ───────────────────────────────────────────────────────────────
 class _ScannerBox extends StatelessWidget {
   final Animation<double> scanLineY;
   final void Function(BarcodeCapture) onDetect;
   final MobileScannerController controller;
+  final bool cameraReady;
+  final bool cameraError;
 
   const _ScannerBox({
     super.key,
     required this.scanLineY,
     required this.onDetect,
     required this.controller,
+    required this.cameraReady,
+    required this.cameraError,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (cameraError) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              _ScannerScreenState._cameraErrorMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
+        ),
+      );
+    }
+
     return AnimatedBuilder(
       animation: scanLineY,
       builder: (context, _) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: SizedBox(
-            height: 160,
+            height: 200,
             child: Stack(
               children: [
-                // Live camera feed
+                // Live camera feed — always built so it can initialise.
                 MobileScanner(controller: controller, onDetect: onDetect),
+
+                // Dark loading overlay until camera is ready.
+                if (!cameraReady)
+                  Container(
+                    color: const Color(0xFF1A1A1A),
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: AppColors.blue),
+                          SizedBox(height: 12),
+                          Text(
+                            'Starting camera…',
+                            style: TextStyle(
+                                color: Colors.white70, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                 // Corner brackets
                 _Corner(top: 8, left: 8, showTop: true, showLeft: true),
@@ -253,30 +322,31 @@ class _ScannerBox extends StatelessWidget {
                 _Corner(bottom: 8, left: 8, showBottom: true, showLeft: true),
                 _Corner(bottom: 8, right: 8, showBottom: true, showRight: true),
 
-                // Animated scan line (80% width, centered)
-                Positioned(
-                  top: scanLineY.value,
-                  left: 0,
-                  right: 0,
-                  child: Align(
-                    alignment: Alignment.center,
-                    child: FractionallySizedBox(
-                      widthFactor: 0.8,
-                      child: Container(
-                        height: 2,
-                        decoration: BoxDecoration(
-                          color: AppColors.blue,
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.blue.withOpacity(0.5),
-                              blurRadius: 4,
-                            ),
-                          ],
+                // Animated scan line — only rendered once camera is live.
+                if (cameraReady)
+                  Positioned(
+                    top: scanLineY.value,
+                    left: 0,
+                    right: 0,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.8,
+                        child: Container(
+                          height: 2,
+                          decoration: BoxDecoration(
+                            color: AppColors.blue,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.blue.withOpacity(0.5),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -286,7 +356,7 @@ class _ScannerBox extends StatelessWidget {
   }
 }
 
-// ── Corner bracket ───────────────────────────────────────────────────────────
+// ── Corner bracket ────────────────────────────────────────────────────────────
 class _Corner extends StatelessWidget {
   final double? top, left, right, bottom;
   final bool showTop, showBottom, showLeft, showRight;
@@ -327,7 +397,7 @@ class _Corner extends StatelessWidget {
   }
 }
 
-// ── Success box ──────────────────────────────────────────────────────────────
+// ── Success box ───────────────────────────────────────────────────────────────
 class _SuccessBox extends StatelessWidget {
   final Animation<double> bounceY;
   final String classroom;
@@ -388,7 +458,7 @@ class _SuccessBox extends StatelessWidget {
   }
 }
 
-// ── Step row ─────────────────────────────────────────────────────────────────
+// ── Step row ──────────────────────────────────────────────────────────────────
 class _StepRow extends StatelessWidget {
   final int number;
   final String text;
