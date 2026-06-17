@@ -42,6 +42,7 @@ dependencies:
 
   # סריקת QR
   mobile_scanner: ^5.2.3
+  qr_flutter: ^4.1.0
 
   # תמונות
   image_picker: ^1.1.2

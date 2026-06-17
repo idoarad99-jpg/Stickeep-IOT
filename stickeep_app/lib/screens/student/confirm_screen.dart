@@ -111,9 +111,9 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'created_at': DateTime.now().toIso8601String(),
       });
 
-      final firestoreRef = await FirebaseFirestore.instance
-          .collection('reservations')
-          .add({
+      final firestoreRef =
+          FirebaseFirestore.instance.collection('reservations').doc();
+      await firestoreRef.set({
         'classroomId': widget.classroom,
         'lessonName': widget.lessonName,
         'date': widget.date,
@@ -125,6 +125,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'studentNumber': studentNumber,
         'seatId': seatId ?? '',
         'createdAt': FieldValue.serverTimestamp(),
+        'qrToken': firestoreRef.id,
       });
 
       // Write to seats collection (read by ESP32 + seat map)
@@ -153,6 +154,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
           'classroomId': widget.classroom,
           'status': 'reserved',
           'createdAt': FieldValue.serverTimestamp(),
+          'qrToken': firestoreRef.id,
         });
       }
 

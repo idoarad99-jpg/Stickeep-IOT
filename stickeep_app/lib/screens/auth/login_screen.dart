@@ -263,8 +263,6 @@ class _LoginScreenState extends State<LoginScreen> {
     // TODO: local_auth integration
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -286,20 +284,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 80,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: AppColors.blueLight,
-                      shape: BoxShape.circle,
-                    ),
+                    color: AppColors.blueLight,
+                    shape: BoxShape.circle,
+                  ),
                     child: Icon(
-                      Icons.person,
-                      size: 44,
-                      color: AppColors.blue,
+                    Icons.person,
+                    size: 44,
+                    color: AppColors.blue,
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 32),
 
-              // ── Email ───────────────────────────────────────────────────
+              // Username
               const Text('Email', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
@@ -312,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              // ── Password ─────────────────────────────────────────────────
+              // Password
               const Text('Password', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
@@ -400,7 +398,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
               const SizedBox(height: 12),
 
-              // ── Fingerprint / Face ID ────────────────────────────────────
+              // Biometric
               OutlinedButton.icon(
                 onPressed: _isLoading ? null : _onBiometricPressed,
                 icon: const Icon(Icons.fingerprint),
@@ -408,7 +406,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
 
-              // ── Sign up ──────────────────────────────────────────────────
+              // Sign up
               const Center(
                 child: Text(
                   "Don't have an account?",
@@ -420,7 +418,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: _isLoading
                     ? null
                     : () => Navigator.push(
-                          context,
+                    context,
                           MaterialPageRoute(
                               builder: (_) => const SignupScreen()),
                         ),

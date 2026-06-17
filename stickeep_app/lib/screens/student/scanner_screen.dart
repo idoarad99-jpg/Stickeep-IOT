@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 
@@ -31,6 +32,8 @@ class _ScannerScreenState extends State<ScannerScreen>
   late Animation<double> _scanLineY;
   late Animation<double> _bounceY;
 
+  late final MobileScannerController _cameraController;
+
   bool _scanned = false;
   bool _isLoading = false;
 
@@ -47,6 +50,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   void initState() {
     super.initState();
+    _cameraController = MobileScannerController();
     _controller = AnimationController(vsync: this, duration: _scanDuration)
       ..repeat(reverse: true);
     _buildAnimations();
@@ -61,8 +65,22 @@ class _ScannerScreenState extends State<ScannerScreen>
 
   @override
   void dispose() {
+    _cameraController.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _onQrDetect(BarcodeCapture capture) {
+    if (_scanned || _isLoading) return;
+    final value = capture.barcodes.firstOrNull?.rawValue ?? '';
+    if (value.isEmpty) return;
+    if (value == widget.reservationId) {
+      _simulateScan();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('QR code does not match your reservation')),
+      );
+    }
   }
 
   Future<void> _simulateScan() async {
@@ -108,6 +126,8 @@ class _ScannerScreenState extends State<ScannerScreen>
     }
 
     if (!mounted) return;
+
+    _cameraController.stop();
 
     // Switch controller to bounce speed before showing success box.
     _controller.stop();
@@ -157,6 +177,8 @@ class _ScannerScreenState extends State<ScannerScreen>
                   : _ScannerBox(
                       key: const ValueKey('scanner'),
                       scanLineY: _scanLineY,
+                      onDetect: _onQrDetect,
+                      controller: _cameraController,
                     ),
             ),
 
@@ -201,62 +223,62 @@ class _ScannerScreenState extends State<ScannerScreen>
 // ── Scanner box ──────────────────────────────────────────────────────────────
 class _ScannerBox extends StatelessWidget {
   final Animation<double> scanLineY;
+  final void Function(BarcodeCapture) onDetect;
+  final MobileScannerController controller;
 
-  const _ScannerBox({super.key, required this.scanLineY});
+  const _ScannerBox({
+    super.key,
+    required this.scanLineY,
+    required this.onDetect,
+    required this.controller,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: scanLineY,
       builder: (context, _) {
-        return Container(
-          height: 160,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Stack(
-            children: [
-              // Corner brackets
-              _Corner(top: 8, left: 8, showTop: true, showLeft: true),
-              _Corner(top: 8, right: 8, showTop: true, showRight: true),
-              _Corner(bottom: 8, left: 8, showBottom: true, showLeft: true),
-              _Corner(bottom: 8, right: 8, showBottom: true, showRight: true),
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            height: 160,
+            child: Stack(
+              children: [
+                // Live camera feed
+                MobileScanner(controller: controller, onDetect: onDetect),
 
-              // Animated scan line (80% width, centered)
-              Positioned(
-                top: scanLineY.value,
-                left: 0,
-                right: 0,
-                child: Align(
-                  alignment: Alignment.center,
-                  child: FractionallySizedBox(
-                    widthFactor: 0.8,
-                    child: Container(
-                      height: 2,
-                      decoration: BoxDecoration(
-                        color: AppColors.blue,
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.blue.withOpacity(0.5),
-                            blurRadius: 4,
-                          ),
-                        ],
+                // Corner brackets
+                _Corner(top: 8, left: 8, showTop: true, showLeft: true),
+                _Corner(top: 8, right: 8, showTop: true, showRight: true),
+                _Corner(bottom: 8, left: 8, showBottom: true, showLeft: true),
+                _Corner(bottom: 8, right: 8, showBottom: true, showRight: true),
+
+                // Animated scan line (80% width, centered)
+                Positioned(
+                  top: scanLineY.value,
+                  left: 0,
+                  right: 0,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: FractionallySizedBox(
+                      widthFactor: 0.8,
+                      child: Container(
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: AppColors.blue,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.blue.withOpacity(0.5),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-
-              // Barcode icon centered
-              const Center(
-                child: Icon(
-                  Icons.qr_code_scanner,
-                  size: 32,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
