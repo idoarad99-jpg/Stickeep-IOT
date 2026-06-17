@@ -1,6 +1,6 @@
 import 'package:stickeep_app/screens/student/report_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/admin_home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
@@ -8,7 +8,6 @@ import 'package:stickeep_app/screens/student/classroom_screen.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
 import 'package:stickeep_app/screens/student/scanner_screen.dart';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
 DateTime _parseDate(String d) {
   final p = d.split('.');
   if (p.length != 3) return DateTime(2000);
@@ -53,42 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _scanOnArrival() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    final query = await FirebaseFirestore.instance
-        .collection('reservations')
-        .where('userId', isEqualTo: uid)
-        .where('status', isEqualTo: 'reserved')
-        .limit(1)
-        .get();
-
-    if (!mounted) return;
-
-    if (query.docs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No active reservation found')),
-      );
-      return;
-    }
-
-    final doc = query.docs.first;
-    final data = doc.data();
-    final classroom = data['classroomId'] as String? ?? '';
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ScannerScreen(
-          classroom: classroom,
-          studentName: _userName,
-          reservationId: doc.id,
-        ),
-      ),
-    );
-  }
-
   Future<void> _fetchProfileFromFirestore() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
@@ -111,8 +74,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = _userRole.toLowerCase() == 'admin';
-    final displayName = _userName.isEmpty ? 'User' : _userName;
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final isAdmin = widget.userRole.toLowerCase() == 'admin';
+    final displayName = widget.userName.isEmpty ? 'User' : widget.userName;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
@@ -129,8 +93,14 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_outline, color: Colors.white),
-            onPressed: () {},
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (context.mounted) {
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/', (r) => false);
+              }
+            },
           ),
         ],
       ),
@@ -139,56 +109,38 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Next reservation card ────────────────────────────────────────
-            _NextReservationCard(uid: FirebaseAuth.instance.currentUser?.uid ?? ''),
+            _NextReservationCard(uid: uid),
             const SizedBox(height: 24),
-
-            // ── Section title ────────────────────────────────────────────────
-            const Text(
-              'What would you like to do?',
-              style: AppTextStyles.sectionTitle,
-            ),
+            const Text('What would you like to do?',
+                style: AppTextStyles.sectionTitle),
             const SizedBox(height: 12),
-
-            // ── New reservation ──────────────────────────────────────────────
             ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ClassroomScreen()),
-              ),
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ClassroomScreen())),
               child: const Text('🪑  New reservation'),
             ),
             const SizedBox(height: 10),
-
-            // ── My reservations ──────────────────────────────────────────────
             OutlinedButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationsScreen(showUpcoming: true))),
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          const ReservationsScreen(showUpcoming: true))),
               child: const Text('📅  My reservations'),
             ),
             const SizedBox(height: 10),
-
-            // ── Scan sticker ─────────────────────────────────────────────────
-            OutlinedButton(
-              onPressed: _scanOnArrival,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE0E0E0)),
-                backgroundColor: Colors.white,
-              ),
-              child: const Text('📱 Scan sticker on arrival'),
-            ),
-            const SizedBox(height: 10),
-
             // ── Reservation history ──────────────────────────────────────────
             OutlinedButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReservationsScreen(showUpcoming: false))),
+              onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) =>
+                          const ReservationsScreen(showUpcoming: false))),
               child: const Text('🕐  Reservation history'),
             ),
-
             const SizedBox(height: 16),
             const Divider(color: AppColors.border),
             const SizedBox(height: 16),
-
-            // ── Admin Panel (only for admins) ────────────────────────────────
             if (isAdmin) ...[
               OutlinedButton(
                 onPressed: () => Navigator.push(
@@ -196,51 +148,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF3C3489),
-                  side: const BorderSide(color: Color(0xFF3C3489)),
+                  foregroundColor: AppColors.purple,
+                  side: const BorderSide(color: AppColors.purple),
                   minimumSize: const Size(double.infinity, 44),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 child: const Text('🔐  Admin Panel'),
               ),
               const SizedBox(height: 10),
             ],
-
-            // ── Report an issue ──────────────────────────────────────────────
             OutlinedButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen())),
+              onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ReportScreen())),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.red,
                 side: const BorderSide(color: AppColors.red),
                 minimumSize: const Size(double.infinity, 44),
-                textStyle: const TextStyle(fontSize: 13),
               ),
               child: const Text('⚠️  Report an issue'),
-            ),
-
-            // ── TEMP: Admin Panel shortcut (remove before release) ───────────
-            const SizedBox(height: 24),
-            const Divider(color: AppColors.border),
-            const SizedBox(height: 8),
-            const Text(
-              'DEV ONLY',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 44),
-              ),
-              child: const Text('🔧  Admin Panel (temp)'),
             ),
           ],
         ),
@@ -249,35 +175,37 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Next Reservation Card ─────────────────────────────────────────────────────
 class _NextReservationCard extends StatelessWidget {
   final String uid;
   const _NextReservationCard({required this.uid});
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('reservations')
-          .where('userId', isEqualTo: uid)
-          .where('status', isEqualTo: 'reserved')
-          .snapshots(),
+    final ref = FirebaseDatabase.instance.ref('reservations/$uid');
+
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
       builder: (context, snapshot) {
-        // Determine the nearest upcoming reservation (client-side sort).
         Map<String, dynamic>? next;
-        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+
+        if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+          final raw = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
           final today = DateTime.now();
           final todayDate = DateTime(today.year, today.month, today.day);
-          final docs = snapshot.data!.docs
-              .map((d) => d.data())
-              .where((d) {
-                final date = _parseDate(d['date'] as String? ?? '');
-                return !date.isBefore(todayDate);
+
+          final upcoming = raw.entries
+              .where((e) {
+                final data = e.value as Map<dynamic, dynamic>;
+                final isUpcoming = data['is_upcoming'] as bool? ?? false;
+                final date = _parseDate(data['date'] as String? ?? '');
+                return isUpcoming && !date.isBefore(todayDate);
               })
+              .map((e) => Map<String, dynamic>.from(e.value as Map))
               .toList()
             ..sort((a, b) => _parseDate(a['date'] as String? ?? '')
                 .compareTo(_parseDate(b['date'] as String? ?? '')));
-          if (docs.isNotEmpty) next = docs.first;
+
+          if (upcoming.isNotEmpty) next = upcoming.first;
         }
 
         return Container(
@@ -324,13 +252,13 @@ class _ReservationSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lesson = (data['lessonName'] as String? ?? '').isEmpty
+    final lesson = (data['lesson_name'] as String? ?? '').isEmpty
         ? 'Lesson'
-        : data['lessonName'] as String;
-    final classroom = data['classroomId'] as String? ?? '';
-    final seat = data['seatNumber']?.toString() ?? '—';
-    final start = data['startTime'] as String? ?? '';
-    final end = data['endTime'] as String? ?? '';
+        : data['lesson_name'] as String;
+    final classroom = data['classroom'] as String? ?? '';
+    final seat = data['seat_number']?.toString() ?? '—';
+    final start = data['time_start'] as String? ?? '';
+    final end = data['time_end'] as String? ?? '';
     final time = end.isEmpty ? start : '$start–$end';
     final dateStr = data['date'] as String? ?? '';
     final label = _dateLabel(dateStr);
@@ -352,14 +280,12 @@ class _ReservationSummary extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                lesson,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
+              Text(lesson,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  )),
               const SizedBox(height: 2),
               Text(
                 '$classroom  •  Seat $seat  •  $time',
