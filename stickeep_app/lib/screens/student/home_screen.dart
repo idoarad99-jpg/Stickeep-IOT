@@ -77,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
     final isAdmin = widget.userRole.toLowerCase() == 'admin';
-    final displayName = widget.userName.isEmpty ? 'User' : widget.userName;
+    final displayName = _userName.isEmpty ? 'User' : _userName;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F4F8),
