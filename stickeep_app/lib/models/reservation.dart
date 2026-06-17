@@ -8,6 +8,7 @@ class Reservation {
   final String timeEnd;
   final int seatNumber;
   final bool isUpcoming;
+  final String? seatId;
 
   Reservation({
     required this.id,
@@ -18,6 +19,7 @@ class Reservation {
     required this.timeStart,
     required this.timeEnd,
     required this.seatNumber,
+    this.seatId,
     required this.isUpcoming,
   });
 
@@ -32,6 +34,7 @@ class Reservation {
       timeEnd: json['time_end'] ?? '',
       seatNumber: json['seat_number'] ?? 0,
       isUpcoming: json['is_upcoming'] ?? true,
+      seatId: json['seat_id'] as String?,
     );
   }
 
@@ -44,5 +47,6 @@ class Reservation {
         'time_end': timeEnd,
         'seat_number': seatNumber,
         'is_upcoming': isUpcoming,
+        'seat_id': seatId,
       };
 }
