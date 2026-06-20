@@ -42,12 +42,21 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final seatId = seatIdFromClassroom(widget.classroom, widget.seatNumber);
 
       // Read studentNumber first so it is guaranteed available for all writes
+      debugPrint('[Confirm] uid: $uid');
       final studentDoc = await FirebaseFirestore.instance
           .collection('students')
           .doc(uid)
           .get();
-      final studentNumber =
-          (studentDoc.data()?['studentNumber'] ?? '').toString();
+      debugPrint('[Confirm] students/$uid exists: ${studentDoc.exists}');
+      final studentData = studentDoc.data();
+      debugPrint('[Confirm] studentData full map: $studentData');
+      // Try camelCase first, fall back to snake_case
+      final studentNumber = ((studentData?['studentNumber'] ??
+              studentData?['student_number'] ??
+              '') as Object)
+          .toString();
+      debugPrint('[Confirm] studentNumber resolved: "$studentNumber"');
+      debugPrint('[Confirm] lessonName: "${widget.lessonName}"');
 
       // Check 1: seat already reserved for this exact date+time slot
       if (seatId != null) {
@@ -73,22 +82,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         }
       }
 
-      // Check 2: seat still free in RTDB (race condition guard)
-      final seatSnap = await widget.seatsRef
-          .child('seat_${widget.seatNumber}')
-          .get();
-      final currentStatus =
-          (seatSnap.value as Map<dynamic, dynamic>?)?['status'] as String?;
-      if (currentStatus != 'free') {
-        setState(() => _isLoading = false);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Sorry, this seat was just taken. Please choose another.')),
-        );
-        return;
-      }
+      final firestoreRef =
+          FirebaseFirestore.instance.collection('reservations').doc();
 
       await widget.seatsRef
           .child('seat_' + widget.seatNumber.toString())
@@ -107,12 +102,10 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'seat_number': widget.seatNumber,
         'student_number': studentNumber,
         'seat_id': seatId ?? '',
+        'qr_token': firestoreRef.id,
         'is_upcoming': true,
         'created_at': DateTime.now().toIso8601String(),
       });
-
-      final firestoreRef =
-          FirebaseFirestore.instance.collection('reservations').doc();
       await firestoreRef.set({
         'classroomId': widget.classroom,
         'lessonName': widget.lessonName,

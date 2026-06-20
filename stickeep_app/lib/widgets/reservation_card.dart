@@ -6,12 +6,14 @@ class ReservationCard extends StatelessWidget {
   final Reservation reservation;
   final VoidCallback? onTap;
   final VoidCallback? onCancel;
+  final VoidCallback? onShowQr;
 
   const ReservationCard({
     super.key,
     required this.reservation,
     this.onTap,
     this.onCancel,
+    this.onShowQr,
   });
 
   @override
@@ -67,20 +69,39 @@ class ReservationCard extends StatelessWidget {
                     style: AppTextStyles.label),
               ],
             ),
-            if (reservation.isUpcoming && onCancel != null) ...[
+            if (reservation.isUpcoming &&
+                (onCancel != null || onShowQr != null)) ...[
               const SizedBox(height: 12),
               const Divider(height: 1, color: AppColors.border),
               const SizedBox(height: 8),
-              GestureDetector(
-                onTap: onCancel,
-                child: const Text(
-                  'Cancel reservation',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.red,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  if (onShowQr != null)
+                    GestureDetector(
+                      onTap: onShowQr,
+                      child: const Text(
+                        '📱 Show QR code',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  if (onCancel != null)
+                    GestureDetector(
+                      onTap: onCancel,
+                      child: const Text(
+                        'Cancel reservation',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.red,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ],

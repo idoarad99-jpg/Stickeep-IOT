@@ -9,6 +9,7 @@ class Reservation {
   final int seatNumber;
   final bool isUpcoming;
   final String? seatId;
+  final String? qrToken;
 
   Reservation({
     required this.id,
@@ -20,6 +21,7 @@ class Reservation {
     required this.timeEnd,
     required this.seatNumber,
     this.seatId,
+    this.qrToken,
     required this.isUpcoming,
   });
 
@@ -35,6 +37,7 @@ class Reservation {
       seatNumber: json['seat_number'] ?? 0,
       isUpcoming: json['is_upcoming'] ?? true,
       seatId: json['seat_id'] as String?,
+      qrToken: json['qr_token'] as String?,
     );
   }
 

@@ -294,7 +294,52 @@ class _ScannerBox extends StatelessWidget {
             child: Stack(
               children: [
                 // Live camera feed — always built so it can initialise.
-                MobileScanner(controller: controller, onDetect: onDetect),
+                MobileScanner(
+                  controller: controller,
+                  onDetect: onDetect,
+                  errorBuilder: (context, error, child) {
+                    debugPrint(
+                        '[Scanner] errorBuilder fired — code: ${error.errorCode.name}, details: ${error.errorDetails?.message}');
+                    return ColoredBox(
+                      color: const Color(0xFF1A1A1A),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.no_photography_outlined,
+                                  color: Colors.white54, size: 36),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Camera error: ${error.errorCode.name}',
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (error.errorDetails?.message != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  error.errorDetails!.message!,
+                                  style: const TextStyle(
+                                      color: Colors.white38, fontSize: 11),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Allow camera access in browser\nthen refresh the page.',
+                                style: TextStyle(
+                                    color: Colors.white54, fontSize: 11),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
                 // Dark loading overlay until camera is ready.
                 if (!cameraReady)

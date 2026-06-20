@@ -6,6 +6,7 @@ import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/seat_id.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
+import 'package:stickeep_app/widgets/qr_code_dialog.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 
 class ReservationsScreen extends StatelessWidget {
@@ -68,6 +69,18 @@ class ReservationsScreen extends StatelessWidget {
                 reservation: r,
                 onCancel: showUpcoming
                     ? () => _cancelReservation(context, uid, r)
+                    : null,
+                onShowQr: (r.isUpcoming &&
+                        r.qrToken != null &&
+                        r.qrToken!.isNotEmpty)
+                    ? () => showQrDialog(
+                          context,
+                          reservationId: r.qrToken!,
+                          classroom: r.classroom,
+                          seat: r.seatNumber.toString(),
+                          date: r.date,
+                          time: '${r.timeStart}–${r.timeEnd}',
+                        )
                     : null,
               );
             },
