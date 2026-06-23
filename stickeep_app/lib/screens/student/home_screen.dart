@@ -73,6 +73,25 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _scanSticker(BuildContext context, String uid) async {
+    final snapshot = await FirebaseDatabase.instance.ref('reservations/' + uid).get();
+    if (!snapshot.exists || snapshot.value == null) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active reservation found')));
+      return;
+    }
+    final raw = snapshot.value as Map<dynamic, dynamic>;
+    final upcoming = raw.entries.where((e) => (e.value as Map<dynamic, dynamic>)['is_upcoming'] == true).toList();
+    if (upcoming.isEmpty) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No active reservation found')));
+      return;
+    }
+    final first = upcoming.first;
+    final data = first.value as Map<dynamic, dynamic>;
+    if (context.mounted) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ScannerScreen(classroom: data['classroom'] as String? ?? '', studentName: _userName, reservationId: first.key as String)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
@@ -119,6 +138,15 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const ClassroomScreen())),
               child: const Text('🪑  New reservation'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton(
+              onPressed: () => _scanSticker(context, uid),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.green,
+                side: const BorderSide(color: AppColors.green),
+              ),
+              child: const Text('📲  Scan sticker on arrival'),
             ),
             const SizedBox(height: 10),
             OutlinedButton(

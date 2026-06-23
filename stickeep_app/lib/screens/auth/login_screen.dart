@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
               .doc(uid)
               .set({
             'name': reqData['name'] ?? '',
-            'role': reqData['role'] ?? 'student',
+            'role': reqData['role'] as String? ?? 'student',
             'email': reqData['email'] ?? email,
           });
 

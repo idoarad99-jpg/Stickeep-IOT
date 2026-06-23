@@ -3,19 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickeep_app/screens/auth/login_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: 'AIzaSyCjbSpVQLYr1h6z1NpsXRMQppizFI392og',
-      appId: '1:533886545260:web:05d58c3e975ee7ee439749',
-      messagingSenderId: '533886545260',
-      projectId: 'stickeep',
-      storageBucket: 'stickeep.firebasestorage.app',
-      databaseURL: 'https://stickeep-default-rtdb.firebaseio.com',
-    ),
+    options: DefaultFirebaseOptions.currentPlatform,
   );
 
   final prefs = await SharedPreferences.getInstance();
