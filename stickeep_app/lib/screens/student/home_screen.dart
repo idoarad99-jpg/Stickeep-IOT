@@ -266,7 +266,33 @@ class _NextReservationCard extends StatelessWidget {
                             style: AppTextStyles.cardSubtitle),
                       ],
                     )
-                  : _ReservationSummary(data: next),
+                  : Builder(builder: (ctx) {
+                      final qrToken =
+                          (next!['qr_token'] as String? ?? '').trim();
+                      final classroom =
+                          next['classroom'] as String? ?? '';
+                      final studentName =
+                          FirebaseAuth.instance.currentUser?.email ?? '';
+                      return _ReservationSummary(
+                        data: next,
+                        onScanArrival: qrToken.isNotEmpty
+                            ? () {
+                                debugPrint(
+                                    '[HomeScreen] Scan on arrival tapped, classroom: $classroom');
+                                Navigator.push(
+                                  ctx,
+                                  MaterialPageRoute(
+                                    builder: (_) => ScannerScreen(
+                                      classroom: classroom,
+                                      studentName: studentName,
+                                      reservationId: qrToken,
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null,
+                      );
+                    }),
             ],
           ),
         );
@@ -277,7 +303,8 @@ class _NextReservationCard extends StatelessWidget {
 
 class _ReservationSummary extends StatelessWidget {
   final Map<String, dynamic> data;
-  const _ReservationSummary({required this.data});
+  final VoidCallback? onScanArrival;
+  const _ReservationSummary({required this.data, this.onScanArrival});
 
   @override
   Widget build(BuildContext context) {
@@ -292,54 +319,79 @@ class _ReservationSummary extends StatelessWidget {
     final dateStr = data['date'] as String? ?? '';
     final label = _dateLabel(dateStr);
 
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.blueLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(Icons.calendar_today_outlined,
-              size: 20, color: AppColors.blue),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(lesson,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  )),
-              const SizedBox(height: 2),
-              Text(
-                '$classroom  •  Seat $seat  •  $time',
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.textSecondary),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.blueLight,
+                borderRadius: BorderRadius.circular(8),
               ),
-            ],
-          ),
+              child: const Icon(Icons.calendar_today_outlined,
+                  size: 20, color: AppColors.blue),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(lesson,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      )),
+                  const SizedBox(height: 2),
+                  Text(
+                    '$classroom  •  Seat $seat  •  $time',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.greenLight,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.green,
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.greenLight,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppColors.green,
+        if (onScanArrival != null) ...[
+          const SizedBox(height: 12),
+          const Divider(height: 1, color: AppColors.border),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onScanArrival,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.green,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 40),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('📷  Scan on arrival',
+                  style: TextStyle(fontSize: 13)),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
