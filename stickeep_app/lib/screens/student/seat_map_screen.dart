@@ -28,19 +28,45 @@ class SeatMapScreen extends StatefulWidget {
 class _SeatMapScreenState extends State<SeatMapScreen> {
   int? _selectedSeat;
 
-  // Returns stream of status for a single seat based on date+time
+  // Returns stream of status for a single seat — reads directly from the
+  // seat document (seats/{seatId}). Detects TIME OVERLAP, not exact match.
   Stream<String> _seatStatusStream(String seatId) {
     return FirebaseFirestore.instance
         .collection('seats')
         .doc(seatId)
-        .collection('reservations')
-        .where('date', isEqualTo: widget.date)
-        .where('startTime', isEqualTo: widget.timeStart)
-        .where('endTime', isEqualTo: widget.timeEnd)
-        .where('status', whereIn: ['reserved', 'occupied'])
         .snapshots()
-        .map((snap) =>
-            snap.docs.isEmpty ? 'free' : snap.docs.first['status'] as String);
+        .map((doc) {
+      if (!doc.exists) return 'free';
+      final data = doc.data();
+      if (data == null) return 'free';
+
+      final docDate = data['date'] as String? ?? '';
+      final docStart = data['startTime'] as String? ?? '';
+      final docEnd = data['endTime'] as String? ?? '';
+      final docStatus = data['status'] as String? ?? 'free';
+
+      // Must be the same day.
+      if (docDate != widget.date) return 'free';
+      if (docStatus != 'reserved' && docStatus != 'occupied') return 'free';
+
+      // Overlap check: two ranges [aStart,aEnd) and [bStart,bEnd) overlap
+      // if aStart < bEnd AND bStart < aEnd.
+      final overlaps =
+          _timeToMinutes(docStart) < _timeToMinutes(widget.timeEnd) &&
+              _timeToMinutes(widget.timeStart) < _timeToMinutes(docEnd);
+
+      if (!overlaps) return 'free';
+      return docStatus;
+    });
+  }
+
+  // Converts "HH:MM" to total minutes for easy comparison.
+  int _timeToMinutes(String hhmm) {
+    final parts = hhmm.split(':');
+    if (parts.length != 2) return 0;
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = int.tryParse(parts[1]) ?? 0;
+    return h * 60 + m;
   }
 
   @override
