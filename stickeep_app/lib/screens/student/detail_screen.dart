@@ -37,6 +37,19 @@ class DetailScreen extends StatelessWidget {
     );
     if (confirm != true) return;
 
+    await FirebaseFirestore.instance.collection('graveyard').add({
+      'student_id': uid,
+      'classroom': reservation.classroom,
+      'lesson_name': reservation.lessonName,
+      'date': reservation.date,
+      'time_start': reservation.timeStart,
+      'time_end': reservation.timeEnd,
+      'seat_number': reservation.seatNumber,
+      'seat_id': reservation.seatId,
+      'original_reservation_id': reservationId,
+      'cancelled_at': FieldValue.serverTimestamp(),
+    });
+
     // 1. RTDB — mark as not upcoming
     await FirebaseDatabase.instance
         .ref('reservations/$uid/$reservationId')
@@ -52,9 +65,12 @@ class DetailScreen extends StatelessWidget {
         final data = seatSnap.data();
         if (data != null && data['reservationId'] == reservationId) {
           await seatRef.update({'status': 'free'});
-          await seatRef.collection('reservations').doc(reservationId).update({
-            'status': 'cancelled',
-          });
+          // Data is already archived in graveyard — delete the live
+          // copy instead of just flagging it as cancelled.
+          await seatRef
+              .collection('reservations')
+              .doc(reservationId)
+              .delete();
         }
       }
     }

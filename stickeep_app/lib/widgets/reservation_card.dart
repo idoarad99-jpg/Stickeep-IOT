@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
+enum ReservationDisplayStatus { reserved, past, cancelled }
+
 class ReservationCard extends StatelessWidget {
   final Reservation reservation;
   final VoidCallback? onTap;
   final VoidCallback? onCancel;
   final VoidCallback? onShowQr;
+  final ReservationDisplayStatus displayStatus;
 
   const ReservationCard({
     super.key,
@@ -14,7 +17,27 @@ class ReservationCard extends StatelessWidget {
     this.onTap,
     this.onCancel,
     this.onShowQr,
+    this.displayStatus = ReservationDisplayStatus.reserved,
   });
+
+  Widget _statusTag() {
+    switch (displayStatus) {
+      case ReservationDisplayStatus.reserved:
+        return StatusTag.reserved();
+      case ReservationDisplayStatus.past:
+        return const StatusTag(
+          label: 'Past',
+          backgroundColor: AppColors.gray,
+          textColor: AppColors.textSecondary,
+        );
+      case ReservationDisplayStatus.cancelled:
+        return const StatusTag(
+          label: 'Cancelled',
+          backgroundColor: AppColors.redLight,
+          textColor: AppColors.red,
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,13 +58,7 @@ class ReservationCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(reservation.classroom, style: AppTextStyles.cardTitle),
-                reservation.isUpcoming
-                    ? StatusTag.reserved()
-                    : const StatusTag(
-                        label: 'Past',
-                        backgroundColor: AppColors.gray,
-                        textColor: AppColors.textSecondary,
-                      ),
+                _statusTag(),
               ],
             ),
             const SizedBox(height: 8),
@@ -69,7 +86,7 @@ class ReservationCard extends StatelessWidget {
                     style: AppTextStyles.label),
               ],
             ),
-            if (reservation.isUpcoming &&
+            if (displayStatus == ReservationDisplayStatus.reserved &&
                 (onCancel != null || onShowQr != null)) ...[
               const SizedBox(height: 12),
               const Divider(height: 1, color: AppColors.border),
