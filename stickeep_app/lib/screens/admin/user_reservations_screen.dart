@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/cancel_reservation.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
 
 class UserReservationsScreen extends StatefulWidget {
@@ -15,8 +17,7 @@ class UserReservationsScreen extends StatefulWidget {
   });
 
   @override
-  State<UserReservationsScreen> createState() =>
-      _UserReservationsScreenState();
+  State<UserReservationsScreen> createState() => _UserReservationsScreenState();
 }
 
 class _UserReservationsScreenState extends State<UserReservationsScreen> {
@@ -32,6 +33,48 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
       int.tryParse(parts[1]) ?? 1,
       int.tryParse(parts[0]) ?? 1,
     );
+  }
+
+  Future<void> _confirmAndCancel(Reservation r) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel this reservation?'),
+        content: Text(
+          'This will cancel ${widget.userName}\'s reservation for '
+          '${r.classroom} on ${r.date} (${r.timeStart}–${r.timeEnd}).',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final adminUid = FirebaseAuth.instance.currentUser?.uid;
+
+    await cancelReservation(
+      uid: widget.uid,
+      r: r,
+      cancelledByAdminUid: adminUid,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cancelled ${widget.userName}\'s reservation'),
+        ),
+      );
+    }
   }
 
   @override
@@ -95,8 +138,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
                     snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
 
                 final today = DateTime.now();
-                final todayDate =
-                    DateTime(today.year, today.month, today.day);
+                final todayDate = DateTime(today.year, today.month, today.day);
 
                 final all = raw.entries
                     .map((e) => Reservation.fromJson(
@@ -130,6 +172,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
                     final r = filtered[index];
                     final d = _parseDate(r.date);
                     final isPast = d != null && d.isBefore(todayDate);
+                    final isUpcomingNow = r.isUpcoming && !isPast;
                     final displayStatus = !r.isUpcoming && !isPast
                         ? ReservationDisplayStatus.cancelled
                         : isPast
@@ -139,6 +182,8 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
                     return ReservationCard(
                       reservation: r,
                       displayStatus: displayStatus,
+                      onCancel:
+                          isUpcomingNow ? () => _confirmAndCancel(r) : null,
                     );
                   },
                 );
