@@ -318,6 +318,7 @@ class _ReservationSummary extends StatelessWidget {
     final time = end.isEmpty ? start : '$start–$end';
     final dateStr = data['date'] as String? ?? '';
     final label = _dateLabel(dateStr);
+    final studentNum = data['student_number'] as String? ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,6 +352,14 @@ class _ReservationSummary extends StatelessWidget {
                     style: const TextStyle(
                         fontSize: 11, color: AppColors.textSecondary),
                   ),
+                  if (studentNum.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Student ID: $studentNum',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.textSecondary),
+                    ),
+                  ],
                 ],
               ),
             ),

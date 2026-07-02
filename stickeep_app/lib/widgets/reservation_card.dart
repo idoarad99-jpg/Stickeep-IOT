@@ -39,6 +39,43 @@ class ReservationCard extends StatelessWidget {
     }
   }
 
+  Widget _nfcBadge() {
+    switch (reservation.nfcStatus) {
+      case 'approved':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.greenLight,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Text('✓ Checked in',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.green)),
+        );
+      case 'declined':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppColors.redLight,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Text('✗ Access denied',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.red)),
+        );
+      case 'pending':
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8E1),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: const Text('⏳ Awaiting scan',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFFF59E0B))),
+        );
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -86,6 +123,22 @@ class ReservationCard extends StatelessWidget {
                     style: AppTextStyles.label),
               ],
             ),
+            if (reservation.studentNumber.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.badge_outlined,
+                      size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('ID ${reservation.studentNumber}',
+                      style: AppTextStyles.label),
+                ],
+              ),
+            ],
+            if (reservation.nfcStatus.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              _nfcBadge(),
+            ],
             if (displayStatus == ReservationDisplayStatus.reserved &&
                 (onCancel != null || onShowQr != null)) ...[
               const SizedBox(height: 12),
