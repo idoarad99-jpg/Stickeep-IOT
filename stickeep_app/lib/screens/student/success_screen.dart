@@ -12,6 +12,7 @@ class SuccessScreen extends StatefulWidget {
   final String time;
   final String reservationId;
   final String studentName;
+  final String studentNumber;
 
   const SuccessScreen({
     super.key,
@@ -23,6 +24,7 @@ class SuccessScreen extends StatefulWidget {
     required this.time,
     required this.reservationId,
     required this.studentName,
+    this.studentNumber = '',
   });
 
   @override
@@ -186,6 +188,23 @@ class _SuccessScreenState extends State<SuccessScreen>
                       ),
                     ],
                   ),
+                  if (widget.studentNumber.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.badge_outlined,
+                            size: 13, color: AppColors.blue),
+                        const SizedBox(width: 5),
+                        Text(
+                          'Student ID: \${widget.studentNumber}',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.blue,
+                              fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

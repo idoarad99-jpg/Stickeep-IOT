@@ -174,6 +174,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
             time: time,
             reservationId: firestoreRef.id,
             studentName: email,
+            studentNumber: studentNumber,
           ),
         ),
       );
