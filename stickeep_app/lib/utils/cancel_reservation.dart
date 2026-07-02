@@ -29,6 +29,7 @@ Future<void> cancelReservation({
     'seat_id': r.seatId,
     'original_reservation_id': r.id,
     'cancelled_at': FieldValue.serverTimestamp(),
+    if (r.nfcStatus.isNotEmpty) 'nfc_status': r.nfcStatus,
     'cancelled_by': cancelledByAdminUid != null ? 'admin' : 'self',
     if (cancelledByAdminUid != null) 'cancelled_by_uid': cancelledByAdminUid,
   });
