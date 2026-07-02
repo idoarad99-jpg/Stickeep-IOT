@@ -77,6 +77,27 @@ class GraveyardScreen extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text('Cancelled: $cancelledLabel',
                         style: AppTextStyles.label),
+                    if ((data['cancelled_by'] as String?) == 'admin') ...[
+                      const SizedBox(height: 4),
+                      const Text('⚠️ Cancelled by admin',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.red,
+                              fontWeight: FontWeight.w500)),
+                    ],
+                    if ((data['nfc_status'] as String? ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'NFC: ${data['nfc_status'] == 'approved' ? '✓ Checked in' : '✗ Access denied'}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: data['nfc_status'] == 'approved'
+                              ? AppColors.green
+                              : AppColors.red,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               );
