@@ -108,7 +108,14 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   }).toList();
                 }
 
-                reservations.sort((a, b) => b.date.compareTo(a.date));
+                reservations.sort((a, b) {
+                  // Sort ascending by date+time: nearest first
+                  final aKey = a.date.split('.').reversed.join() +
+                      a.timeStart.replaceAll(':', '');
+                  final bKey = b.date.split('.').reversed.join() +
+                      b.timeStart.replaceAll(':', '');
+                  return aKey.compareTo(bKey);
+                });
 
                 if (reservations.isEmpty) return _emptyState(showUpcoming);
 

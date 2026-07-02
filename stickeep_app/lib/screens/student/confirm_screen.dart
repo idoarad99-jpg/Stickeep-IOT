@@ -105,6 +105,11 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         'qr_token': firestoreRef.id,
         'is_upcoming': true,
         'created_at': DateTime.now().toIso8601String(),
+        // Numeric sort key: YYYYMMDDHHММ — used by Flutter + ESP32 to sort reservations
+        'sort_key': int.parse(
+          widget.date.split('.').reversed.join() +
+          widget.timeStart.replaceAll(':', '')
+        ),
       });
       await firestoreRef.set({
         'classroomId': widget.classroom,

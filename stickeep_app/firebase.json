@@ -1,1 +1,36 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"stickeep","appId":"1:533886545260:android:f19f2627501af76c439749","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"stickeep","configurations":{"android":"1:533886545260:android:f19f2627501af76c439749","web":"1:533886545260:web:05d58c3e975ee7ee439749"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "stickeep",
+          "appId": "1:533886545260:android:f19f2627501af76c439749",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "stickeep",
+          "configurations": {
+            "android": "1:533886545260:android:f19f2627501af76c439749",
+            "web": "1:533886545260:web:05d58c3e975ee7ee439749"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

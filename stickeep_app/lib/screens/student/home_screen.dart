@@ -231,8 +231,16 @@ class _NextReservationCard extends StatelessWidget {
               })
               .map((e) => Map<String, dynamic>.from(e.value as Map))
               .toList()
-            ..sort((a, b) => _parseDate(a['date'] as String? ?? '')
-                .compareTo(_parseDate(b['date'] as String? ?? '')));
+            ..sort((a, b) {
+                // Sort ascending by date+time: nearest first
+                final aDate = a['date'] as String? ?? '';
+                final aTime = a['time_start'] as String? ?? '';
+                final bDate = b['date'] as String? ?? '';
+                final bTime = b['time_start'] as String? ?? '';
+                final aKey = aDate.split('.').reversed.join() + aTime.replaceAll(':', '');
+                final bKey = bDate.split('.').reversed.join() + bTime.replaceAll(':', '');
+                return aKey.compareTo(bKey);
+              });
 
           if (upcoming.isNotEmpty) next = upcoming.first;
         }
