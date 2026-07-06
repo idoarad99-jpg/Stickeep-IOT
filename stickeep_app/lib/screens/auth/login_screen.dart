@@ -215,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
             TextField(
               controller: resetEmailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(hintText: 'Your email'),
+              decoration: const InputDecoration(hintText: 'Enter your email address'),
             ),
           ],
         ),
@@ -238,18 +238,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                      content: Text('Reset link sent to your email!')),
+                    content: Text('Password reset email sent! Check your inbox.'),
+                    backgroundColor: Color(0xFF3B6D11),
+                  ),
                 );
               } on FirebaseAuthException catch (e) {
                 if (!mounted) return;
                 final msg = e.code == 'user-not-found'
                     ? 'No account found with this email.'
                     : 'Failed to send reset email. Please try again.';
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(msg)));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(msg),
+                    backgroundColor: const Color(0xFFA32D2D),
+                  ),
+                );
               }
             },
-            child: const Text('Send'),
+            child: const Text('Send Reset Email'),
           ),
         ],
       ),

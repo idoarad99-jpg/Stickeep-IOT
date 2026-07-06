@@ -60,6 +60,74 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
     });
   }
 
+  Widget _buildTelemetryRow(String seatId) {
+    return StreamBuilder<DatabaseEvent>(
+      stream: FirebaseDatabase.instance.ref('seats/$seatId').onValue,
+      builder: (context, snap) {
+        int? battery;
+        int? lastSeenMs;
+        if (snap.hasData && snap.data!.snapshot.exists) {
+          final val = snap.data!.snapshot.value;
+          if (val is Map) {
+            battery = (val['batteryPercentage'] as num?)?.toInt();
+            lastSeenMs = (val['lastSeen'] as num?)?.toInt();
+          }
+        }
+
+        Color batteryColor;
+        String batteryText;
+        if (battery == null) {
+          batteryColor = AppColors.textSecondary;
+          batteryText = 'N/A';
+        } else if (battery > 50) {
+          batteryColor = AppColors.green;
+          batteryText = '$battery%';
+        } else if (battery >= 20) {
+          batteryColor = const Color(0xFFF59E0B);
+          batteryText = '$battery%';
+        } else {
+          batteryColor = AppColors.red;
+          batteryText = '$battery%';
+        }
+
+        String lastSeenText;
+        if (lastSeenMs == null) {
+          lastSeenText = 'Never';
+        } else {
+          final diff = DateTime.now().difference(
+              DateTime.fromMillisecondsSinceEpoch(lastSeenMs));
+          if (diff.inMinutes < 1) {
+            lastSeenText = 'Just now';
+          } else if (diff.inHours < 1) {
+            lastSeenText = '${diff.inMinutes} minutes ago';
+          } else if (diff.inHours < 24) {
+            lastSeenText = '${diff.inHours} hours ago';
+          } else {
+            lastSeenText = '${diff.inDays} days ago';
+          }
+        }
+
+        return Row(
+          children: [
+            const Text('🔋', style: TextStyle(fontSize: 11)),
+            const SizedBox(width: 3),
+            Text(batteryText,
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: batteryColor)),
+            const SizedBox(width: 12),
+            const Text('🕐', style: TextStyle(fontSize: 11)),
+            const SizedBox(width: 3),
+            Text(lastSeenText,
+                style: const TextStyle(
+                    fontSize: 11, color: AppColors.textSecondary)),
+          ],
+        );
+      },
+    );
+  }
+
   // Converts "HH:MM" to total minutes for easy comparison.
   int _timeToMinutes(String hhmm) {
     final parts = hhmm.split(':');
@@ -180,6 +248,8 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  _buildTelemetryRow(seatId),
                                 ],
                               ),
                             ),
