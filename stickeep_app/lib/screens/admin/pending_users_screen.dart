@@ -19,6 +19,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
         'studentNumber': data['studentNumber'],
         'name': data['name'],
         'email': data['email'],
+        'nfcSerialNumber': data['nfcSerialNumber'] ?? '',
         'isAuthorized': true,
         'role': 'student',
         'approvedAt': DateTime.now(),

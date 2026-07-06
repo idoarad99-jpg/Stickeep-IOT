@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
@@ -76,6 +77,60 @@ class ReservationCard extends StatelessWidget {
     }
   }
 
+  Widget _nfcBadgeLive() {
+    final ref = FirebaseDatabase.instance
+        .ref('reservations/${reservation.studentId}/${reservation.id}/nfc_status');
+    return StreamBuilder<DatabaseEvent>(
+      stream: ref.onValue,
+      builder: (context, snapshot) {
+        final status = snapshot.hasData
+            ? snapshot.data!.snapshot.value as String?
+            : null;
+        switch (status) {
+          case 'approved':
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.greenLight,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text('NFC ✓',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.green)),
+            );
+          case 'declined':
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.redLight,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text('NFC ✗',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.red)),
+            );
+          default:
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E7EB),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: const Text('NFC pending',
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6B7280))),
+            );
+        }
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -135,10 +190,8 @@ class ReservationCard extends StatelessWidget {
                 ],
               ),
             ],
-            if (reservation.nfcStatus.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              _nfcBadge(),
-            ],
+            const SizedBox(height: 6),
+            _nfcBadgeLive(),
             if (displayStatus == ReservationDisplayStatus.reserved &&
                 (onCancel != null || onShowQr != null)) ...[
               const SizedBox(height: 12),

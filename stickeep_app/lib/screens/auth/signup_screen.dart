@@ -20,6 +20,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _studentIdController = TextEditingController();
+  final _nfcController = TextEditingController();
 
   bool _obscurePassword = true;
   bool _submitted = false;
@@ -36,6 +37,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _studentIdController.dispose();
+    _nfcController.dispose();
     super.dispose();
   }
 
@@ -130,6 +132,11 @@ class _SignupScreenState extends State<SignupScreen> {
       print('[SignupScreen] Auth account created — uid: ${credential.user!.uid}');
 
       // 2. Save registration request to Firestore
+      final nfcCleaned = _nfcController.text
+          .replaceAll(':', '')
+          .replaceAll(' ', '')
+          .toUpperCase();
+
       await FirebaseFirestore.instance
           .collection('registrationRequests')
           .doc(credential.user!.uid)
@@ -137,6 +144,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'studentNumber': _studentIdController.text.trim(),
         'name': _nameController.text.trim(),
         'email': _emailController.text.trim(),
+        'nfcSerialNumber': nfcCleaned,
         'status': 'pending',
         'submittedAt': DateTime.now(),
       });
@@ -373,6 +381,27 @@ class _SignupScreenState extends State<SignupScreen> {
                 style: TextStyle(
                   fontSize: 11,
                   color: AppColors.blue,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── NFC Card Serial Number (optional) ────────────────────────
+              const Text('NFC Card Serial Number', style: AppTextStyles.label),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _nfcController,
+                onChanged: (_) => setState(() {}),
+                decoration: const InputDecoration(
+                  hintText: 'e.g. 04:80:7D:CA:C5:78:80',
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '📱 Scan your Technion card with any NFC reader app to find this number',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.textSecondary,
                   fontStyle: FontStyle.italic,
                 ),
               ),
