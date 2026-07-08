@@ -157,7 +157,13 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
                   if (isPast) return _showPast;
                   return false;
                 }).toList()
-                  ..sort((a, b) => b.date.compareTo(a.date));
+                  ..sort((a, b) {
+                    final aKey = a.date.split('.').reversed.join() +
+                        a.timeStart.replaceAll(':', '');
+                    final bKey = b.date.split('.').reversed.join() +
+                        b.timeStart.replaceAll(':', '');
+                    return aKey.compareTo(bKey);
+                  });
 
                 if (filtered.isEmpty) {
                   return const Center(
