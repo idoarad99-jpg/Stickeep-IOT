@@ -36,6 +36,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
 
   List<Classroom>? _classrooms;
   bool _classroomsFallback = false;
+  String? _classroomsError;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _classroomsSub;
   Timer? _classroomsTimeoutTimer;
 
@@ -52,9 +53,13 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
       }
     });
 
+    // Filtering 'active' client-side (rather than chaining
+    // .where('active', ...).orderBy('order') server-side) avoids needing a
+    // composite Firestore index for this tiny collection — that combination
+    // throws FAILED_PRECONDITION without one, which is what was silently
+    // triggering the hardcoded fallback list below.
     _classroomsSub = FirebaseFirestore.instance
         .collection('classrooms')
-        .where('active', isEqualTo: true)
         .orderBy('order')
         .snapshots()
         .listen(
@@ -62,13 +67,21 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
         _classroomsTimeoutTimer?.cancel();
         if (!mounted) return;
         setState(() {
-          _classrooms = snapshot.docs.map(Classroom.fromDoc).toList();
+          _classrooms = snapshot.docs
+              .map(Classroom.fromDoc)
+              .where((c) => c.active)
+              .toList();
           _classroomsFallback = false;
         });
       },
-      onError: (_) {
+      onError: (e) {
         _classroomsTimeoutTimer?.cancel();
-        if (mounted) setState(() => _classroomsFallback = true);
+        if (mounted) {
+          setState(() {
+            _classroomsFallback = true;
+            _classroomsError = e.toString();
+          });
+        }
       },
     );
   }
@@ -143,34 +156,48 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             Builder(builder: (context) {
               if (_classroomsFallback) {
                 final fallback = _fallbackClassrooms();
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: fallback.map((room) {
-                    final selected = _selectedClassroom?.id == room.id;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedClassroom = room),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: selected ? AppColors.blue : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: selected ? AppColors.blue : AppColors.border,
-                          ),
-                        ),
-                        child: Text(
-                          room.displayName,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: selected ? Colors.white : AppColors.textPrimary,
-                          ),
-                        ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_classroomsError != null) ...[
+                      Text(
+                        'Couldn\'t load classrooms live — showing a fallback list. '
+                        '($_classroomsError)',
+                        style: const TextStyle(color: AppColors.red, fontSize: 11),
                       ),
-                    );
-                  }).toList(),
+                      const SizedBox(height: 8),
+                    ],
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: fallback.map((room) {
+                        final selected = _selectedClassroom?.id == room.id;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedClassroom = room),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.blue : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: selected ? AppColors.blue : AppColors.border,
+                              ),
+                            ),
+                            child: Text(
+                              room.displayName,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color:
+                                    selected ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 );
               }
 
