@@ -7,6 +7,7 @@ import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/seat_id.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
+import 'package:stickeep_app/screens/student/scanner_screen.dart';
 import 'package:stickeep_app/widgets/loading_skeleton.dart';
 import 'package:stickeep_app/widgets/qr_code_dialog.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
@@ -138,6 +139,24 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                       displayStatus: displayStatus,
                       onCancel: showUpcoming
                           ? () => _cancelReservation(context, uid, r)
+                          : null,
+
+
+
+                      onScanArrival: (r.isUpcoming &&
+                              r.qrToken != null &&
+                              r.qrToken!.isNotEmpty &&
+                              r.qrStatus != 'arrived')
+                          ? () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ScannerScreen(
+                                    classroom: r.classroom,
+                                    studentName: uid,
+                                    reservationId: r.qrToken!,
+                                  ),
+                                ),
+                              )
                           : null,
                       onShowQr: (r.isUpcoming &&
                               r.qrToken != null &&

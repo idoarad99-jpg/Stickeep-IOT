@@ -12,6 +12,7 @@ class Reservation {
   final String? seatId;
   final String? qrToken;
   final String nfcStatus; // '', 'pending', 'approved', 'declined'
+  final String qrStatus;  // '', 'arrived'
 
   Reservation({
     required this.id,
@@ -27,6 +28,7 @@ class Reservation {
     this.qrToken,
     required this.isUpcoming,
     this.nfcStatus = '',
+    this.qrStatus = '',
   });
 
   factory Reservation.fromJson(String id, Map<dynamic, dynamic> json) {
@@ -44,6 +46,7 @@ class Reservation {
       seatId: json['seat_id'] as String?,
       qrToken: json['qr_token'] as String?,
       nfcStatus: json['nfc_status'] as String? ?? '',
+      qrStatus: json['qr_status'] as String? ?? '',
     );
   }
 
@@ -59,5 +62,6 @@ class Reservation {
         'is_upcoming': isUpcoming,
         'seat_id': seatId,
         'nfc_status': nfcStatus,
+        'qr_status': qrStatus,
       };
 }

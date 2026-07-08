@@ -10,6 +10,7 @@ class ReservationCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onCancel;
   final VoidCallback? onShowQr;
+  final VoidCallback? onScanArrival;
   final ReservationDisplayStatus displayStatus;
 
   const ReservationCard({
@@ -18,6 +19,7 @@ class ReservationCard extends StatelessWidget {
     this.onTap,
     this.onCancel,
     this.onShowQr,
+    this.onScanArrival,
     this.displayStatus = ReservationDisplayStatus.reserved,
   });
 
@@ -131,6 +133,21 @@ class ReservationCard extends StatelessWidget {
     );
   }
 
+  Widget _qrBadge() {
+    if (reservation.qrStatus == 'arrived') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: AppColors.greenLight,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text('✓ Arrived',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.green)),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -192,6 +209,7 @@ class ReservationCard extends StatelessWidget {
             ],
             const SizedBox(height: 6),
             _nfcBadgeLive(),
+            if (reservation.qrStatus.isNotEmpty) ...[const SizedBox(height: 4), _qrBadge()],
             if (displayStatus == ReservationDisplayStatus.reserved &&
                 (onCancel != null || onShowQr != null)) ...[
               const SizedBox(height: 12),
@@ -200,6 +218,18 @@ class ReservationCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  if (onScanArrival != null)
+                    GestureDetector(
+                      onTap: onScanArrival,
+                      child: const Text(
+                        '📷 Scan on arrival',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   if (onShowQr != null)
                     GestureDetector(
                       onTap: onShowQr,
