@@ -58,6 +58,9 @@ Future<void> cancelReservation({
           'date': '',
           'updatedAt': FieldValue.serverTimestamp(),
         });
+        // Hardware-facing: clear the seat's own RTDB status too, so its
+        // ESP32 unit stops showing 'reserved' after a cancellation.
+        await FirebaseDatabase.instance.ref('seats/$seatId').update({'status': 'free'});
         if (fsReservationId != null) {
           // Data is already archived in graveyard — delete the live
           // copies instead of just flagging them as cancelled.

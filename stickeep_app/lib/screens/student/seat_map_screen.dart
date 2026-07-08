@@ -1,14 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:stickeep_app/models/seat.dart';
 import 'package:stickeep_app/screens/student/confirm_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
-import 'package:stickeep_app/utils/seat_id.dart';
 
 class SeatMapScreen extends StatefulWidget {
-  final String classroom;
-  final String classroomCode;
-  final int seatCount;
+  final String classroomId;
+  final String classroomDisplayName;
   final String lessonName;
   final String date;
   final String timeStart;
@@ -16,9 +15,8 @@ class SeatMapScreen extends StatefulWidget {
 
   const SeatMapScreen({
     super.key,
-    required this.classroom,
-    required this.classroomCode,
-    required this.seatCount,
+    required this.classroomId,
+    required this.classroomDisplayName,
     required this.lessonName,
     required this.date,
     required this.timeStart,
@@ -30,7 +28,7 @@ class SeatMapScreen extends StatefulWidget {
 }
 
 class _SeatMapScreenState extends State<SeatMapScreen> {
-  int? _selectedSeat;
+  String? _selectedSeatId;
 
   // Returns stream of status for a single seat — reads directly from the
   // seat document (seats/{seatId}). Detects TIME OVERLAP, not exact match.
@@ -143,11 +141,9 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final seatIds = seatIdsForClassroom(widget.classroomCode, widget.seatCount);
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.classroom),
+        title: Text(widget.classroomDisplayName),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(36),
           child: Padding(
@@ -159,159 +155,201 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          // ── Legend ──────────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _legendItem(AppColors.greenLight, AppColors.green, 'Available'),
-                const SizedBox(width: 16),
-                _legendItem(AppColors.redLight, AppColors.red, 'Taken'),
-                const SizedBox(width: 16),
-                _legendItem(AppColors.blueLight, AppColors.blue, 'Selected'),
-              ],
-            ),
-          ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        // Filtering 'active' client-side (rather than chaining
+        // .where('active', ...).orderBy('order') server-side) avoids
+        // needing a composite Firestore index for this tiny subcollection.
+        stream: FirebaseFirestore.instance
+            .collection('classrooms')
+            .doc(widget.classroomId)
+            .collection('seats')
+            .orderBy('order')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Couldn\'t load seats: ${snapshot.error}',
+                    style: const TextStyle(color: AppColors.red, fontSize: 12),
+                    textAlign: TextAlign.center),
+              ),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-          // ── Seat list ────────────────────────────────────────────────────
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: seatIds.length,
-              itemBuilder: (context, index) {
-                final seatId = seatIds[index];
-                final seatNumber = index + 1;
-                final isSelected = _selectedSeat == seatNumber;
+          final seats = snapshot.data!.docs
+              .map(ClassroomSeat.fromDoc)
+              .where((s) => s.active)
+              .toList();
+          final selectedSeat = _selectedSeatId == null
+              ? null
+              : seats.cast<ClassroomSeat?>().firstWhere(
+                  (s) => s!.seatId == _selectedSeatId,
+                  orElse: () => null);
 
-                return StreamBuilder<String>(
-                  stream: _seatStatusStream(seatId),
-                  builder: (context, snapshot) {
-                    final status = snapshot.data ?? 'free';
-                    final isTaken =
-                        status == 'reserved' || status == 'occupied';
+          return Column(
+            children: [
+              // ── Legend ──────────────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _legendItem(AppColors.greenLight, AppColors.green, 'Available'),
+                    const SizedBox(width: 16),
+                    _legendItem(AppColors.redLight, AppColors.red, 'Taken'),
+                    const SizedBox(width: 16),
+                    _legendItem(AppColors.blueLight, AppColors.blue, 'Selected'),
+                  ],
+                ),
+              ),
 
-                    Color bg;
-                    Color border;
-                    Color textColor;
-
-                    if (isSelected) {
-                      bg = AppColors.blueLight;
-                      border = AppColors.blue;
-                      textColor = AppColors.blue;
-                    } else if (isTaken) {
-                      bg = AppColors.redLight;
-                      border = AppColors.red;
-                      textColor = AppColors.red;
-                    } else {
-                      bg = AppColors.greenLight;
-                      border = AppColors.green;
-                      textColor = AppColors.green;
-                    }
-
-                    return GestureDetector(
-                      onTap: isTaken
-                          ? null
-                          : () => setState(() {
-                                _selectedSeat = isSelected ? null : seatNumber;
-                              }),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: bg,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                              color: border, width: isSelected ? 2 : 1),
+              // ── Seat list ────────────────────────────────────────────────
+              Expanded(
+                child: seats.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No seats set up in this room yet. Ask an admin to add one.',
+                          style: AppTextStyles.cardSubtitle,
+                          textAlign: TextAlign.center,
                         ),
-                        child: Row(
-                          children: [
-                            Text(
-                              '♿',
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Accessible Seat $seatNumber',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: textColor,
-                                    ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: seats.length,
+                        itemBuilder: (context, index) {
+                          final seat = seats[index];
+                          final isSelected = _selectedSeatId == seat.seatId;
+
+                          return StreamBuilder<String>(
+                            stream: _seatStatusStream(seat.seatId),
+                            builder: (context, statusSnap) {
+                              final status = statusSnap.data ?? 'free';
+                              final isTaken =
+                                  status == 'reserved' || status == 'occupied';
+
+                              Color bg;
+                              Color border;
+                              Color textColor;
+
+                              if (isSelected) {
+                                bg = AppColors.blueLight;
+                                border = AppColors.blue;
+                                textColor = AppColors.blue;
+                              } else if (isTaken) {
+                                bg = AppColors.redLight;
+                                border = AppColors.red;
+                                textColor = AppColors.red;
+                              } else {
+                                bg = AppColors.greenLight;
+                                border = AppColors.green;
+                                textColor = AppColors.green;
+                              }
+
+                              return GestureDetector(
+                                onTap: isTaken
+                                    ? null
+                                    : () => setState(() {
+                                          _selectedSeatId =
+                                              isSelected ? null : seat.seatId;
+                                        }),
+                                child: Container(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: bg,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                        color: border, width: isSelected ? 2 : 1),
                                   ),
-                                  Text(
-                                    seatId,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textSecondary,
-                                    ),
+                                  child: Row(
+                                    children: [
+                                      const Text('♿', style: TextStyle(fontSize: 24)),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              seat.label.isEmpty
+                                                  ? 'Seat ${seat.order}'
+                                                  : seat.label,
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: textColor,
+                                              ),
+                                            ),
+                                            Text(
+                                              seat.seatId,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            _buildTelemetryRow(seat.seatId),
+                                          ],
+                                        ),
+                                      ),
+                                      if (isTaken)
+                                        StatusTag.occupied()
+                                      else if (isSelected)
+                                        const StatusTag(
+                                          label: 'Selected',
+                                          backgroundColor: AppColors.blueLight,
+                                          textColor: AppColors.blue,
+                                        )
+                                      else
+                                        StatusTag.free(),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  _buildTelemetryRow(seatId),
-                                ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+
+              // ── Confirm button ───────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ElevatedButton(
+                  onPressed: selectedSeat == null
+                      ? null
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ConfirmScreen(
+                                classroom: widget.classroomDisplayName,
+                                classroomId: widget.classroomId,
+                                lessonName: widget.lessonName,
+                                date: widget.date,
+                                timeStart: widget.timeStart,
+                                timeEnd: widget.timeEnd,
+                                seatId: selectedSeat.seatId,
+                                seatNumber: selectedSeat.order,
+                                seatLabel: selectedSeat.label,
                               ),
                             ),
-                            if (isTaken)
-                              StatusTag.occupied()
-                            else if (isSelected)
-                              const StatusTag(
-                                label: 'Selected',
-                                backgroundColor: AppColors.blueLight,
-                                textColor: AppColors.blue,
-                              )
-                            else
-                              StatusTag.free(),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          // ── Confirm button ───────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: _selectedSeat == null
-                  ? null
-                  : () {
-                      final seatId = seatIdFromClassroom(
-                          widget.classroomCode, _selectedSeat!);
-                      if (seatId == null) return;
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ConfirmScreen(
-                            classroom: widget.classroom,
-                            classroomCode: widget.classroomCode,
-                            lessonName: widget.lessonName,
-                            date: widget.date,
-                            timeStart: widget.timeStart,
-                            timeEnd: widget.timeEnd,
-                            seatNumber: _selectedSeat!,
-                            seatsRef: FirebaseDatabase.instance.ref(
-                                'classrooms/${widget.classroom.replaceAll(' ', '_').toLowerCase()}/seats'),
-                          ),
-                        ),
-                      );
-                    },
-              child: Text(
-                _selectedSeat == null
-                    ? 'Select a seat'
-                    : 'Confirm seat $_selectedSeat',
+                          );
+                        },
+                  child: Text(
+                    selectedSeat == null
+                        ? 'Select a seat'
+                        : 'Confirm ${selectedSeat.label.isEmpty ? 'seat ${selectedSeat.order}' : selectedSeat.label}',
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

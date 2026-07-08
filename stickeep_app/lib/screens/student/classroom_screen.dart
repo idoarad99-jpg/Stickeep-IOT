@@ -13,6 +13,7 @@ class ClassroomScreen extends StatefulWidget {
 }
 
 class _ClassroomScreenState extends State<ClassroomScreen> {
+  String? _selectedBuilding;
   Classroom? _selectedClassroom;
   DateTime? _selectedDate;
   TimeOfDay? _timeStart;
@@ -85,12 +86,18 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             const Text('Classroom', style: AppTextStyles.label),
             const SizedBox(height: 8),
             StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              // Filtering 'active' client-side (rather than chaining
+              // .where('active', ...).orderBy('order') server-side) avoids
+              // needing a composite Firestore index for this tiny collection.
               stream: FirebaseFirestore.instance
                   .collection('classrooms')
-                  .where('active', isEqualTo: true)
                   .orderBy('order')
                   .snapshots(),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text('Couldn\'t load classrooms: ${snapshot.error}',
+                      style: const TextStyle(color: AppColors.red, fontSize: 12));
+                }
                 if (!snapshot.hasData) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(vertical: 8),
@@ -102,8 +109,10 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                   );
                 }
 
-                final classrooms =
-                    snapshot.data!.docs.map(Classroom.fromDoc).toList();
+                final classrooms = snapshot.data!.docs
+                    .map(Classroom.fromDoc)
+                    .where((c) => c.active)
+                    .toList();
 
                 if (classrooms.isEmpty) {
                   return const Text(
@@ -112,35 +121,98 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                   );
                 }
 
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: classrooms.map((room) {
-                    final selected = _selectedClassroom?.code == room.code;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedClassroom = room),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: selected ? AppColors.blue : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: selected ? AppColors.blue : AppColors.border,
-                          ),
-                        ),
-                        child: Text(
-                          room.name,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color:
-                                selected ? Colors.white : AppColors.textPrimary,
-                          ),
-                        ),
+                // Buildings in first-seen (admin `order`) order.
+                final buildings = <String>[];
+                for (final c in classrooms) {
+                  if (!buildings.contains(c.building)) buildings.add(c.building);
+                }
+
+                // Default to the first building until the user picks one.
+                final selectedBuilding =
+                    (_selectedBuilding != null && buildings.contains(_selectedBuilding))
+                        ? _selectedBuilding!
+                        : buildings.first;
+
+                final roomsInBuilding =
+                    classrooms.where((c) => c.building == selectedBuilding).toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (buildings.length > 1) ...[
+                      const Text('Building', style: AppTextStyles.label),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: buildings.map((building) {
+                          final selected = building == selectedBuilding;
+                          return GestureDetector(
+                            onTap: () => setState(() {
+                              _selectedBuilding = building;
+                              _selectedClassroom = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: selected ? AppColors.textPrimary : Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: selected
+                                      ? AppColors.textPrimary
+                                      : AppColors.border,
+                                ),
+                              ),
+                              child: Text(
+                                building,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: selected
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    );
-                  }).toList(),
+                      const SizedBox(height: 16),
+                      const Text('Room', style: AppTextStyles.label),
+                      const SizedBox(height: 8),
+                    ],
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: roomsInBuilding.map((room) {
+                        final selected = _selectedClassroom?.id == room.id;
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedClassroom = room),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.blue : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: selected ? AppColors.blue : AppColors.border,
+                              ),
+                            ),
+                            child: Text(
+                              room.roomName,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color:
+                                    selected ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 );
               },
             ),
@@ -268,9 +340,8 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => SeatMapScreen(
-                            classroom: _selectedClassroom!.name,
-                            classroomCode: _selectedClassroom!.code,
-                            seatCount: _selectedClassroom!.seatCount,
+                            classroomId: _selectedClassroom!.id,
+                            classroomDisplayName: _selectedClassroom!.displayName,
                             lessonName: _lessonController.text.trim(),
                             date: _formatDate(_selectedDate!),
                             timeStart: _formatTime(_timeStart!),

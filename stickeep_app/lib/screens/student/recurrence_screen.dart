@@ -1,40 +1,38 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/success_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/booking.dart';
-import 'package:stickeep_app/utils/seat_id.dart';
 
 // Safety cap: never generate more occurrences than this in one go.
 const int _maxOccurrences = 26;
 
 class RecurrenceScreen extends StatefulWidget {
   final String classroom;
-  final String classroomCode;
+  final String classroomId;
   final String lessonName;
   final String date;
   final String timeStart;
   final String timeEnd;
+  final String seatId;
   final int seatNumber;
   final String studentNumber;
   final String firstReservationRtdbKey;
   final String firstReservationFirestoreId;
-  final DatabaseReference seatsRef;
 
   const RecurrenceScreen({
     super.key,
     required this.classroom,
-    required this.classroomCode,
+    required this.classroomId,
     required this.lessonName,
     required this.date,
     required this.timeStart,
     required this.timeEnd,
+    required this.seatId,
     required this.seatNumber,
     required this.studentNumber,
     required this.firstReservationRtdbKey,
     required this.firstReservationFirestoreId,
-    required this.seatsRef,
   });
 
   @override
@@ -122,14 +120,12 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
 
     for (final occDate in occurrenceDates) {
       final dateStr = _formatDate(occDate);
-      final seatId = seatIdFromClassroom(widget.classroomCode, widget.seatNumber);
-      final taken = seatId != null &&
-          await isSeatTaken(
-            seatId: seatId,
-            date: dateStr,
-            timeStart: widget.timeStart,
-            timeEnd: widget.timeEnd,
-          );
+      final taken = await isSeatTaken(
+        seatId: widget.seatId,
+        date: dateStr,
+        timeStart: widget.timeStart,
+        timeEnd: widget.timeEnd,
+      );
       if (taken) {
         skippedDates.add(dateStr);
         continue;
@@ -137,14 +133,14 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
       await createReservation(
         uid: uid,
         classroom: widget.classroom,
-        classroomCode: widget.classroomCode,
+        classroomId: widget.classroomId,
         lessonName: widget.lessonName,
         date: dateStr,
         timeStart: widget.timeStart,
         timeEnd: widget.timeEnd,
+        seatId: widget.seatId,
         seatNumber: widget.seatNumber,
         studentNumber: widget.studentNumber,
-        seatsRef: widget.seatsRef,
         recurringGroupId: groupId,
       );
       createdCount++;

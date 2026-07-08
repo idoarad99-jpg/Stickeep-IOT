@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/classroom.dart';
 import 'package:stickeep_app/models/reservation.dart';
+import 'package:stickeep_app/screens/admin/manage_seats_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
 
@@ -27,15 +28,12 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
     );
   }
 
-  /// Upcoming (today or later) 'reserved' docs for [classroomCode], optionally
-  /// restricted to seat numbers above [seatNumberAbove].
+  /// Upcoming (today or later) 'reserved' docs anywhere in [classroomId].
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _futureReservations(
-    String classroomCode, {
-    int? seatNumberAbove,
-  }) async {
+      String classroomId) async {
     final query = await _firestore
         .collection('reservations')
-        .where('classroomId', isEqualTo: classroomCode)
+        .where('classroomId', isEqualTo: classroomId)
         .where('status', isEqualTo: 'reserved')
         .get();
 
@@ -43,23 +41,16 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
     final todayDate = DateTime(today.year, today.month, today.day);
 
     return query.docs.where((d) {
-      final data = d.data();
-      final date = _parseDate(data['date'] as String? ?? '');
-      if (date == null || date.isBefore(todayDate)) return false;
-      if (seatNumberAbove != null) {
-        final seatNumber = (data['seatNumber'] as num?)?.toInt() ?? 0;
-        if (seatNumber <= seatNumberAbove) return false;
-      }
-      return true;
+      final date = _parseDate(d.data()['date'] as String? ?? '');
+      return date != null && !date.isBefore(todayDate);
     }).toList();
   }
 
   // ── Add ──────────────────────────────────────────────────────────────────
 
   Future<void> _showAddDialog(int nextOrder) async {
-    final nameController = TextEditingController();
-    final codeController = TextEditingController();
-    final seatCountController = TextEditingController(text: '5');
+    final buildingController = TextEditingController();
+    final roomController = TextEditingController();
     String? error;
 
     await showDialog<void>(
@@ -72,26 +63,24 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
-                controller: nameController,
+                controller: buildingController,
                 decoration: const InputDecoration(
-                  labelText: 'Name',
-                  hintText: 'e.g. Taub 6',
+                  labelText: 'Building',
+                  hintText: 'e.g. Ulman, Taub',
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: codeController,
-                textCapitalization: TextCapitalization.characters,
+                controller: roomController,
                 decoration: const InputDecoration(
-                  labelText: 'Sticker code',
-                  hintText: 'e.g. T6 — must match the ESP32 sticker labels',
+                  labelText: 'Room',
+                  hintText: 'e.g. Room 1, 214',
                 ),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: seatCountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Number of seats'),
+              const SizedBox(height: 8),
+              const Text(
+                'You\'ll add individual seats (with their sticker codes) after creating the room.',
+                style: AppTextStyles.cardSubtitle,
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
@@ -106,29 +95,29 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
             ),
             TextButton(
               onPressed: () async {
-                final name = nameController.text.trim();
-                final code = codeController.text.trim().toUpperCase().replaceAll(' ', '');
-                final seatCount = int.tryParse(seatCountController.text.trim());
+                final building = buildingController.text.trim();
+                final room = roomController.text.trim();
 
-                if (name.isEmpty || code.isEmpty) {
-                  setDialogState(() => error = 'Name and code are required');
-                  return;
-                }
-                if (seatCount == null || seatCount < 1) {
-                  setDialogState(() => error = 'Seat count must be a positive number');
+                if (building.isEmpty || room.isEmpty) {
+                  setDialogState(() => error = 'Building and room are required');
                   return;
                 }
 
-                final existing = await _firestore.collection('classrooms').doc(code).get();
-                if (existing.exists) {
-                  setDialogState(() => error = 'Code "$code" is already in use');
+                final duplicate = await _firestore
+                    .collection('classrooms')
+                    .where('building', isEqualTo: building)
+                    .where('roomName', isEqualTo: room)
+                    .limit(1)
+                    .get();
+                if (duplicate.docs.isNotEmpty) {
+                  setDialogState(
+                      () => error = '$building — $room already exists');
                   return;
                 }
 
-                await _firestore.collection('classrooms').doc(code).set({
-                  'name': name,
-                  'code': code,
-                  'seatCount': seatCount,
+                await _firestore.collection('classrooms').add({
+                  'building': building,
+                  'roomName': room,
                   'order': nextOrder,
                   'active': true,
                   'createdAt': FieldValue.serverTimestamp(),
@@ -147,47 +136,31 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
   // ── Edit ─────────────────────────────────────────────────────────────────
 
   Future<void> _showEditDialog(Classroom c) async {
-    final nameController = TextEditingController(text: c.name);
-    final seatCountController =
-        TextEditingController(text: c.seatCount.toString());
+    final buildingController = TextEditingController(text: c.building);
+    final roomController = TextEditingController(text: c.roomName);
     String? error;
 
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text('Edit ${c.name}'),
+          title: Text('Edit ${c.displayName}'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
+                controller: buildingController,
+                decoration: const InputDecoration(labelText: 'Building'),
               ),
               const SizedBox(height: 12),
               TextField(
-                enabled: false,
-                controller: TextEditingController(text: c.code),
-                decoration: const InputDecoration(
-                  labelText: 'Sticker code',
-                  helperText: 'Fixed — matches physical ESP32 stickers',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: seatCountController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'Number of seats',
-                  helperText:
-                      'Increasing this adds seats — make sure new stickers use SEAT_${c.code}_<n>',
-                ),
+                controller: roomController,
+                decoration: const InputDecoration(labelText: 'Room'),
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
-                Text(error!,
-                    style: const TextStyle(color: AppColors.red, fontSize: 12)),
+                Text(error!, style: const TextStyle(color: AppColors.red, fontSize: 12)),
               ],
             ],
           ),
@@ -198,54 +171,17 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
             ),
             TextButton(
               onPressed: () async {
-                final name = nameController.text.trim();
-                final seatCount = int.tryParse(seatCountController.text.trim());
+                final building = buildingController.text.trim();
+                final room = roomController.text.trim();
 
-                if (name.isEmpty) {
-                  setDialogState(() => error = 'Name is required');
-                  return;
-                }
-                if (seatCount == null || seatCount < 1) {
-                  setDialogState(
-                      () => error = 'Seat count must be a positive number');
+                if (building.isEmpty || room.isEmpty) {
+                  setDialogState(() => error = 'Building and room are required');
                   return;
                 }
 
-                if (seatCount < c.seatCount) {
-                  final affected = await _futureReservations(c.code,
-                      seatNumberAbove: seatCount);
-                  if (affected.isNotEmpty) {
-                    if (!dialogContext.mounted) return;
-                    final proceed = await showDialog<bool>(
-                      context: dialogContext,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Seats have upcoming reservations'),
-                        content: Text(
-                            '${affected.length} upcoming reservation${affected.length == 1 ? '' : 's'} '
-                            'use a seat number above $seatCount. They will remain valid, but '
-                            '${c.name} will no longer offer that seat for new bookings. Continue?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('Cancel'),
-                          ),
-                          TextButton(
-                            style:
-                                TextButton.styleFrom(foregroundColor: AppColors.red),
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Reduce anyway'),
-                          ),
-                        ],
-                      ),
-                    );
-                    if (proceed != true) return;
-                  }
-                }
-
-                if (!dialogContext.mounted) return;
-                await _firestore.collection('classrooms').doc(c.code).update({
-                  'name': name,
-                  'seatCount': seatCount,
+                await _firestore.collection('classrooms').doc(c.id).update({
+                  'building': building,
+                  'roomName': room,
                 });
 
                 if (dialogContext.mounted) Navigator.pop(dialogContext);
@@ -263,7 +199,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
   Future<void> _handleDelete(Classroom c) async {
     final adminUid = FirebaseAuth.instance.currentUser?.uid;
 
-    final futureDocs = await _futureReservations(c.code);
+    final futureDocs = await _futureReservations(c.id);
 
     if (!mounted) return;
 
@@ -271,9 +207,9 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text('Delete ${c.name}?'),
+          title: Text('Delete ${c.displayName}?'),
           content: const Text(
-              'This classroom has no upcoming reservations. This cannot be undone.'),
+              'This classroom has no upcoming reservations. This cannot be undone — all its seats will be deleted too.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -288,10 +224,10 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
         ),
       );
       if (confirmed != true) return;
-      await _firestore.collection('classrooms').doc(c.code).delete();
+      await _deleteClassroomAndSeats(c);
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${c.name} deleted')));
+            .showSnackBar(SnackBar(content: Text('${c.displayName} deleted')));
       }
       return;
     }
@@ -300,7 +236,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: Text(
-            '${c.name} has ${futureDocs.length} upcoming reservation${futureDocs.length == 1 ? '' : 's'}'),
+            '${c.displayName} has ${futureDocs.length} upcoming reservation${futureDocs.length == 1 ? '' : 's'}'),
         content: const Text('How would you like to remove this classroom?'),
         actions: [
           TextButton(
@@ -321,22 +257,32 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
     );
 
     if (choice == 'hide') {
-      await _firestore.collection('classrooms').doc(c.code).update({'active': false});
+      await _firestore.collection('classrooms').doc(c.id).update({'active': false});
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${c.name} hidden from new bookings')));
+            .showSnackBar(SnackBar(content: Text('${c.displayName} hidden from new bookings')));
       }
     } else if (choice == 'cancel_delete') {
       for (final doc in futureDocs) {
         await _cancelFirestoreReservation(doc, adminUid);
       }
-      await _firestore.collection('classrooms').doc(c.code).delete();
+      await _deleteClassroomAndSeats(c);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(
-                '${c.name} deleted, ${futureDocs.length} booking${futureDocs.length == 1 ? '' : 's'} cancelled')));
+                '${c.displayName} deleted, ${futureDocs.length} booking${futureDocs.length == 1 ? '' : 's'} cancelled')));
       }
     }
+  }
+
+  Future<void> _deleteClassroomAndSeats(Classroom c) async {
+    final classroomRef = _firestore.collection('classrooms').doc(c.id);
+    final seats = await classroomRef.collection('seats').get();
+    for (final seatDoc in seats.docs) {
+      await _firestore.collection('seats').doc(seatDoc.id).delete();
+      await seatDoc.reference.delete();
+    }
+    await classroomRef.delete();
   }
 
   /// Cancels the RTDB-side reservation matching a Firestore reservations/
@@ -369,7 +315,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
   }
 
   Future<void> _toggleActive(Classroom c, bool active) async {
-    await _firestore.collection('classrooms').doc(c.code).update({'active': active});
+    await _firestore.collection('classrooms').doc(c.id).update({'active': active});
   }
 
   @override
@@ -384,6 +330,9 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _firestore.collection('classrooms').orderBy('order').snapshots(),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -426,15 +375,19 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: AppColors.border),
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Row(
                                         children: [
-                                          Text(c.name, style: AppTextStyles.cardTitle),
+                                          Flexible(
+                                            child: Text(c.displayName,
+                                                style: AppTextStyles.cardTitle,
+                                                overflow: TextOverflow.ellipsis),
+                                          ),
                                           const SizedBox(width: 8),
                                           if (!c.active)
                                             Container(
@@ -451,28 +404,55 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                                             ),
                                         ],
                                       ),
-                                      const SizedBox(height: 2),
-                                      Text('Code ${c.code} · ${c.seatCount} seats',
-                                          style: AppTextStyles.cardSubtitle),
-                                    ],
-                                  ),
+                                    ),
+                                    if (!c.active)
+                                      IconButton(
+                                        tooltip: 'Restore',
+                                        icon: const Icon(Icons.visibility_outlined,
+                                            color: AppColors.blue),
+                                        onPressed: () => _toggleActive(c, true),
+                                      ),
+                                    IconButton(
+                                      tooltip: 'Edit',
+                                      icon: const Icon(Icons.edit_outlined, color: AppColors.blue),
+                                      onPressed: () => _showEditDialog(c),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Delete',
+                                      icon: const Icon(Icons.delete_outline, color: AppColors.red),
+                                      onPressed: () => _handleDelete(c),
+                                    ),
+                                  ],
                                 ),
-                                if (!c.active)
-                                  IconButton(
-                                    tooltip: 'Restore',
-                                    icon: const Icon(Icons.visibility_outlined,
-                                        color: AppColors.blue),
-                                    onPressed: () => _toggleActive(c, true),
-                                  ),
-                                IconButton(
-                                  tooltip: 'Edit',
-                                  icon: const Icon(Icons.edit_outlined, color: AppColors.blue),
-                                  onPressed: () => _showEditDialog(c),
-                                ),
-                                IconButton(
-                                  tooltip: 'Delete',
-                                  icon: const Icon(Icons.delete_outline, color: AppColors.red),
-                                  onPressed: () => _handleDelete(c),
+                                const SizedBox(height: 4),
+                                StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                                  stream: _firestore
+                                      .collection('classrooms')
+                                      .doc(c.id)
+                                      .collection('seats')
+                                      .snapshots(),
+                                  builder: (context, seatsSnap) {
+                                    final seatCount = seatsSnap.data?.docs.length;
+                                    return SizedBox(
+                                      width: double.infinity,
+                                      child: OutlinedButton(
+                                        onPressed: () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => ManageSeatsScreen(classroom: c),
+                                          ),
+                                        ),
+                                        style: OutlinedButton.styleFrom(
+                                          minimumSize: const Size(double.infinity, 36),
+                                          foregroundColor: AppColors.purple,
+                                          side: const BorderSide(color: AppColors.purple),
+                                        ),
+                                        child: Text(seatCount == null
+                                            ? '🪑  Manage seats'
+                                            : '🪑  Manage seats ($seatCount)'),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ],
                             ),
