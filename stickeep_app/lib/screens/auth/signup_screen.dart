@@ -119,6 +119,12 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
+    final studentId = _studentIdController.text.trim();
+    if (!RegExp(r'^[0-9]{6,9}$').hasMatch(studentId)) {
+      setState(() => _errorMessage = 'Student ID must be 6–9 digits only.');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {

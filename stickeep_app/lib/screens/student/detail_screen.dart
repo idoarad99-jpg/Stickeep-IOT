@@ -1,8 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/cancel_reservation.dart';
 
 class DetailScreen extends StatelessWidget {
   final Reservation reservation;
@@ -37,43 +36,7 @@ class DetailScreen extends StatelessWidget {
     );
     if (confirm != true) return;
 
-    await FirebaseFirestore.instance.collection('graveyard').add({
-      'student_id': uid,
-      'classroom': reservation.classroom,
-      'lesson_name': reservation.lessonName,
-      'date': reservation.date,
-      'time_start': reservation.timeStart,
-      'time_end': reservation.timeEnd,
-      'seat_number': reservation.seatNumber,
-      'seat_id': reservation.seatId,
-      'original_reservation_id': reservationId,
-      'cancelled_at': FieldValue.serverTimestamp(),
-    });
-
-    // 1. RTDB — mark as not upcoming
-    await FirebaseDatabase.instance
-        .ref('reservations/$uid/$reservationId')
-        .update({'is_upcoming': false});
-
-    // 2. Firestore seat — clear if exists
-    final seatId = reservation.seatId;
-    if (seatId != null && seatId.isNotEmpty) {
-      final seatRef =
-          FirebaseFirestore.instance.collection('seats').doc(seatId);
-      final seatSnap = await seatRef.get();
-      if (seatSnap.exists) {
-        final data = seatSnap.data();
-        if (data != null && data['reservationId'] == reservationId) {
-          await seatRef.update({'status': 'free'});
-          // Data is already archived in graveyard — delete the live
-          // copy instead of just flagging it as cancelled.
-          await seatRef
-              .collection('reservations')
-              .doc(reservationId)
-              .delete();
-        }
-      }
-    }
+    await cancelReservation(uid: uid, r: reservation);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -94,7 +57,6 @@ class DetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Summary card ─────────────────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -143,12 +105,19 @@ class DetailScreen extends StatelessWidget {
                       label: 'Seat',
                       value: 'Seat ${reservation.seatNumber}',
                       valueColor: AppColors.blue),
+                  if (reservation.studentNumber.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _InfoRow(
+                        icon: Icons.badge_outlined,
+                        label: 'Student ID',
+                        value: reservation.studentNumber,
+                        valueColor: AppColors.blue),
+                  ],
                 ],
               ),
             ),
             const SizedBox(height: 20),
 
-            // ── Timeline ─────────────────────────────────────────────────────
             const Text('Status timeline', style: AppTextStyles.sectionTitle),
             const SizedBox(height: 12),
             _TimelineStep(
@@ -167,18 +136,25 @@ class DetailScreen extends StatelessWidget {
               isLast: false,
             ),
             _TimelineStep(
-              icon: reservation.isUpcoming
-                  ? Icons.schedule_outlined
-                  : Icons.login_outlined,
-              color:
-                  reservation.isUpcoming ? AppColors.border : AppColors.green,
+              icon: reservation.qrStatus == 'arrived' ||
+                      reservation.nfcStatus == 'approved'
+                  ? Icons.login_outlined
+                  : Icons.schedule_outlined,
+              color: reservation.qrStatus == 'arrived' ||
+                      reservation.nfcStatus == 'approved'
+                  ? AppColors.green
+                  : AppColors.border,
               label: 'Arrived',
-              sublabel: reservation.isUpcoming ? 'Pending' : 'Confirmed',
+              sublabel: reservation.qrStatus == 'arrived' ||
+                      reservation.nfcStatus == 'approved'
+                  ? 'Confirmed'
+                  : reservation.isUpcoming
+                      ? 'Pending'
+                      : 'Not confirmed',
               isLast: true,
             ),
             const SizedBox(height: 24),
 
-            // ── Cancel button ────────────────────────────────────────────────
             if (reservation.isUpcoming)
               OutlinedButton(
                 onPressed: () => _cancel(context),
