@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:stickeep_app/models/classroom.dart';
 import 'package:stickeep_app/screens/student/seat_map_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
@@ -11,8 +13,7 @@ class ClassroomScreen extends StatefulWidget {
 }
 
 class _ClassroomScreenState extends State<ClassroomScreen> {
-  final List<String> _classrooms = ['Taub 1', 'Taub 2', 'Taub 3', 'Taub 4', 'Taub 5'];
-  String? _selectedClassroom;
+  Classroom? _selectedClassroom;
   DateTime? _selectedDate;
   TimeOfDay? _timeStart;
   TimeOfDay? _timeEnd;
@@ -83,33 +84,65 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             // ── Classroom ──────────────────────────────────────────────────
             const Text('Classroom', style: AppTextStyles.label),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _classrooms.map((room) {
-                final selected = _selectedClassroom == room;
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedClassroom = room),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: selected ? AppColors.blue : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: selected ? AppColors.blue : AppColors.border,
-                      ),
+            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('classrooms')
+                  .where('active', isEqualTo: true)
+                  .orderBy('order')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
-                    child: Text(
-                      room,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: selected ? Colors.white : AppColors.textPrimary,
+                  );
+                }
+
+                final classrooms =
+                    snapshot.data!.docs.map(Classroom.fromDoc).toList();
+
+                if (classrooms.isEmpty) {
+                  return const Text(
+                    'No classrooms available yet. Ask an admin to add one.',
+                    style: AppTextStyles.cardSubtitle,
+                  );
+                }
+
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: classrooms.map((room) {
+                    final selected = _selectedClassroom?.code == room.code;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedClassroom = room),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected ? AppColors.blue : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: selected ? AppColors.blue : AppColors.border,
+                          ),
+                        ),
+                        child: Text(
+                          room.name,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color:
+                                selected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  }).toList(),
                 );
-              }).toList(),
+              },
             ),
             const SizedBox(height: 20),
 
@@ -235,7 +268,9 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => SeatMapScreen(
-                            classroom: _selectedClassroom!,
+                            classroom: _selectedClassroom!.name,
+                            classroomCode: _selectedClassroom!.code,
+                            seatCount: _selectedClassroom!.seatCount,
                             lessonName: _lessonController.text.trim(),
                             date: _formatDate(_selectedDate!),
                             timeStart: _formatTime(_timeStart!),

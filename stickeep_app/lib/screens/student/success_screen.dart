@@ -13,6 +13,7 @@ class SuccessScreen extends StatefulWidget {
   final String reservationId;
   final String studentName;
   final String studentNumber;
+  final String? recurrenceSummary;
 
   const SuccessScreen({
     super.key,
@@ -25,6 +26,7 @@ class SuccessScreen extends StatefulWidget {
     required this.reservationId,
     required this.studentName,
     this.studentNumber = '',
+    this.recurrenceSummary,
   });
 
   @override
@@ -208,6 +210,30 @@ class _SuccessScreenState extends State<SuccessScreen>
                 ],
               ),
             ),
+            if (widget.recurrenceSummary != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.blueLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.repeat, size: 16, color: AppColors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        widget.recurrenceSummary!,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.blue),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
 
             // ── Scan on arrival ──────────────────────────────────────────────

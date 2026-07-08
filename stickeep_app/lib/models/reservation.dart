@@ -13,6 +13,7 @@ class Reservation {
   final String? qrToken;
   final String nfcStatus; // '', 'pending', 'approved', 'declined'
   final String qrStatus;  // '', 'arrived'
+  final String? recurringGroupId;
 
   Reservation({
     required this.id,
@@ -29,6 +30,7 @@ class Reservation {
     required this.isUpcoming,
     this.nfcStatus = '',
     this.qrStatus = '',
+    this.recurringGroupId,
   });
 
   factory Reservation.fromJson(String id, Map<dynamic, dynamic> json) {
@@ -47,6 +49,7 @@ class Reservation {
       qrToken: json['qr_token'] as String?,
       nfcStatus: json['nfc_status'] as String? ?? '',
       qrStatus: json['qr_status'] as String? ?? '',
+      recurringGroupId: json['recurring_group_id'] as String?,
     );
   }
 
@@ -63,5 +66,6 @@ class Reservation {
         'seat_id': seatId,
         'nfc_status': nfcStatus,
         'qr_status': qrStatus,
+        if (recurringGroupId != null) 'recurring_group_id': recurringGroupId,
       };
 }

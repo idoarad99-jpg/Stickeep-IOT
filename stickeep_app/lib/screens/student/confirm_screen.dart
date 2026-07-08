@@ -2,12 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:stickeep_app/screens/student/success_screen.dart';
+import 'package:stickeep_app/screens/student/recurrence_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/booking.dart';
 import 'package:stickeep_app/utils/seat_id.dart';
 
 class ConfirmScreen extends StatefulWidget {
   final String classroom;
+  final String classroomCode;
   final String lessonName;
   final String date;
   final String timeStart;
@@ -18,6 +20,7 @@ class ConfirmScreen extends StatefulWidget {
   const ConfirmScreen({
     super.key,
     required this.classroom,
+    required this.classroomCode,
     required this.lessonName,
     required this.date,
     required this.timeStart,
@@ -39,8 +42,6 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Not logged in');
 
-      final seatId = seatIdFromClassroom(widget.classroom, widget.seatNumber);
-
       // Read studentNumber first so it is guaranteed available for all writes
       final studentDoc = await FirebaseFirestore.instance
           .collection('students')
@@ -53,123 +54,56 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
               '') as Object)
           .toString();
 
-      // Check 1: seat already reserved for this exact date+time slot
-      if (seatId != null) {
-        final existing = await FirebaseFirestore.instance
-            .collection('seats')
-            .doc(seatId)
-            .collection('reservations')
-            .where('date', isEqualTo: widget.date)
-            .where('startTime', isEqualTo: widget.timeStart)
-            .where('endTime', isEqualTo: widget.timeEnd)
-            .where('status', isEqualTo: 'reserved')
-            .limit(1)
-            .get();
-        if (existing.docs.isNotEmpty) {
-          setState(() => _isLoading = false);
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('You already have a reservation for this time slot')),
-          );
-          return;
-        }
+      final seatId = seatIdFromClassroom(widget.classroomCode, widget.seatNumber);
+
+      // Check: seat already reserved for this exact date+time slot
+      if (seatId != null &&
+          await isSeatTaken(
+            seatId: seatId,
+            date: widget.date,
+            timeStart: widget.timeStart,
+            timeEnd: widget.timeEnd,
+          )) {
+        setState(() => _isLoading = false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text('You already have a reservation for this time slot')),
+        );
+        return;
       }
 
-      final firestoreRef =
-          FirebaseFirestore.instance.collection('reservations').doc();
-
-      await widget.seatsRef
-          .child('seat_' + widget.seatNumber.toString())
-          .update({'status': 'reserved'});
-
-      final reservationRef = FirebaseDatabase.instance
-          .ref('reservations/' + uid)
-          .push();
-
-      await reservationRef.set({
-        'classroom': widget.classroom,
-        'lesson_name': widget.lessonName,
-        'date': widget.date,
-        'time_start': widget.timeStart,
-        'time_end': widget.timeEnd,
-        'seat_number': widget.seatNumber,
-        'student_number': studentNumber,
-        'seat_id': seatId ?? '',
-        'qr_token': firestoreRef.id,
-        'is_upcoming': true,
-        'created_at': DateTime.now().toIso8601String(),
-        // Numeric sort key: YYYYMMDDHHММ — used by Flutter + ESP32 to sort reservations
-        'sort_key': int.parse(
-          widget.date.split('.').reversed.join() +
-          widget.timeStart.replaceAll(':', '')
-        ),
-      });
-      await firestoreRef.set({
-        'classroomId': widget.classroom,
-        'lessonName': widget.lessonName,
-        'date': widget.date,
-        'startTime': widget.timeStart,
-        'endTime': widget.timeEnd,
-        'seatNumber': widget.seatNumber,
-        'status': 'reserved',
-        'userId': uid,
-        'studentNumber': studentNumber,
-        'seatId': seatId ?? '',
-        'createdAt': FieldValue.serverTimestamp(),
-        'qrToken': firestoreRef.id,
-      });
-
-      // Write to seats collection (read by ESP32 + seat map)
-      if (seatId != null) {
-        final seatDocRef =
-            FirebaseFirestore.instance.collection('seats').doc(seatId);
-        await seatDocRef.set({
-          'status': 'reserved',
-          'studentNumber': studentNumber,
-          'startTime': widget.timeStart,
-          'endTime': widget.timeEnd,
-          'date': widget.date,
-          'classroomId': widget.classroom,
-          'reservationId': firestoreRef.id,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-        await seatDocRef
-            .collection('reservations')
-            .doc(firestoreRef.id)
-            .set({
-          'studentNumber': studentNumber,
-          'userId': uid,
-          'date': widget.date,
-          'startTime': widget.timeStart,
-          'endTime': widget.timeEnd,
-          'classroomId': widget.classroom,
-          'status': 'reserved',
-          'createdAt': FieldValue.serverTimestamp(),
-          'qrToken': firestoreRef.id,
-        });
-      }
+      final booking = await createReservation(
+        uid: uid,
+        classroom: widget.classroom,
+        classroomCode: widget.classroomCode,
+        lessonName: widget.lessonName,
+        date: widget.date,
+        timeStart: widget.timeStart,
+        timeEnd: widget.timeEnd,
+        seatNumber: widget.seatNumber,
+        studentNumber: studentNumber,
+        seatsRef: widget.seatsRef,
+      );
 
       if (!mounted) return;
-
-      final email = FirebaseAuth.instance.currentUser?.email ?? '';
-      final time = widget.timeStart + '–' + widget.timeEnd;
-      final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => SuccessScreen(
-            email: email,
+          builder: (_) => RecurrenceScreen(
             classroom: widget.classroom,
-            seat: widget.seatNumber.toString(),
+            classroomCode: widget.classroomCode,
+            lessonName: widget.lessonName,
             date: widget.date,
-            lesson: lesson,
-            time: time,
-            reservationId: firestoreRef.id,
-            studentName: email,
+            timeStart: widget.timeStart,
+            timeEnd: widget.timeEnd,
+            seatNumber: widget.seatNumber,
             studentNumber: studentNumber,
+            firstReservationRtdbKey: booking.rtdbKey,
+            firstReservationFirestoreId: booking.firestoreId,
+            seatsRef: widget.seatsRef,
           ),
         ),
       );

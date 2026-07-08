@@ -1,10 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
-import 'package:stickeep_app/utils/seat_id.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
 import 'package:stickeep_app/screens/student/scanner_screen.dart';
@@ -228,32 +226,15 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
   Future<void> _cancelReservation(
       BuildContext context, String uid, Reservation r) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Cancel reservation?'),
-        content: const Text('This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    await cancelReservation(uid: uid, r: r);
+    final count = await handleCancelChoice(context: context, uid: uid, r: r);
+    if (count == 0) return;
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reservation cancelled')),
+        SnackBar(
+            content: Text(count == 1
+                ? 'Reservation cancelled'
+                : '$count reservations cancelled')),
       );
     }
   }

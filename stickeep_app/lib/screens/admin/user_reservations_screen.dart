@@ -37,42 +37,22 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
   }
 
   Future<void> _confirmAndCancel(Reservation r) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel this reservation?'),
-        content: Text(
-          'This will cancel ${widget.userName}\'s reservation for '
-          '${r.classroom} on ${r.date} (${r.timeStart}–${r.timeEnd}).',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
     final adminUid = FirebaseAuth.instance.currentUser?.uid;
 
-    await cancelReservation(
+    final count = await handleCancelChoice(
+      context: context,
       uid: widget.uid,
       r: r,
       cancelledByAdminUid: adminUid,
     );
+    if (count == 0) return;
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Cancelled ${widget.userName}\'s reservation'),
+          content: Text(count == 1
+              ? 'Cancelled ${widget.userName}\'s reservation'
+              : 'Cancelled $count of ${widget.userName}\'s reservations'),
         ),
       );
     }

@@ -16,31 +16,16 @@ class DetailScreen extends StatelessWidget {
   });
 
   Future<void> _cancel(BuildContext context) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Cancel reservation?'),
-        content: const Text('This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: AppColors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
-
-    await cancelReservation(uid: uid, r: reservation);
+    final count =
+        await handleCancelChoice(context: context, uid: uid, r: reservation);
+    if (count == 0) return;
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reservation cancelled')),
+        SnackBar(
+            content: Text(count == 1
+                ? 'Reservation cancelled'
+                : '$count reservations cancelled')),
       );
       Navigator.pop(context);
     }

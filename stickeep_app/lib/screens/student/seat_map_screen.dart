@@ -7,6 +7,8 @@ import 'package:stickeep_app/utils/seat_id.dart';
 
 class SeatMapScreen extends StatefulWidget {
   final String classroom;
+  final String classroomCode;
+  final int seatCount;
   final String lessonName;
   final String date;
   final String timeStart;
@@ -15,6 +17,8 @@ class SeatMapScreen extends StatefulWidget {
   const SeatMapScreen({
     super.key,
     required this.classroom,
+    required this.classroomCode,
+    required this.seatCount,
     required this.lessonName,
     required this.date,
     required this.timeStart,
@@ -139,7 +143,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final seatIds = seatIdsForClassroom(widget.classroom);
+    final seatIds = seatIdsForClassroom(widget.classroomCode, widget.seatCount);
 
     return Scaffold(
       appBar: AppBar(
@@ -280,14 +284,15 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
               onPressed: _selectedSeat == null
                   ? null
                   : () {
-                      final seatId =
-                          seatIdFromClassroom(widget.classroom, _selectedSeat!);
+                      final seatId = seatIdFromClassroom(
+                          widget.classroomCode, _selectedSeat!);
                       if (seatId == null) return;
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => ConfirmScreen(
                             classroom: widget.classroom,
+                            classroomCode: widget.classroomCode,
                             lessonName: widget.lessonName,
                             date: widget.date,
                             timeStart: widget.timeStart,

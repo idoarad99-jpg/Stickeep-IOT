@@ -6,6 +6,7 @@ import 'package:stickeep_app/screens/admin/pending_users_screen.dart';
 import 'package:stickeep_app/screens/admin/reports_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/admin/user_search_screen.dart';
+import 'package:stickeep_app/screens/admin/manage_classrooms_screen.dart';
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -227,6 +228,33 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       ),
                     ),
                     child: const Text('⚠️  View reports ($reportsCount)'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Outlined — Manage classrooms
+                SizedBox(
+                  height: 36,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ManageClassroomsScreen()),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textPrimary,
+                      side: const BorderSide(color: Color(0xFFE0E0E0)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    child: const Text('🏫  Manage classrooms'),
                   ),
                 ),
                 const SizedBox(height: 16),
