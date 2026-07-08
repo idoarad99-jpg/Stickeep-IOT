@@ -27,6 +27,33 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
     );
   }
 
+  /// Upcoming (today or later) 'reserved' docs for [classroomCode], optionally
+  /// restricted to seat numbers above [seatNumberAbove].
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _futureReservations(
+    String classroomCode, {
+    int? seatNumberAbove,
+  }) async {
+    final query = await _firestore
+        .collection('reservations')
+        .where('classroomId', isEqualTo: classroomCode)
+        .where('status', isEqualTo: 'reserved')
+        .get();
+
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+
+    return query.docs.where((d) {
+      final data = d.data();
+      final date = _parseDate(data['date'] as String? ?? '');
+      if (date == null || date.isBefore(todayDate)) return false;
+      if (seatNumberAbove != null) {
+        final seatNumber = (data['seatNumber'] as num?)?.toInt() ?? 0;
+        if (seatNumber <= seatNumberAbove) return false;
+      }
+      return true;
+    }).toList();
+  }
+
   // ── Add ──────────────────────────────────────────────────────────────────
 
   Future<void> _showAddDialog(int nextOrder) async {
@@ -117,23 +144,126 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
     );
   }
 
+  // ── Edit ─────────────────────────────────────────────────────────────────
+
+  Future<void> _showEditDialog(Classroom c) async {
+    final nameController = TextEditingController(text: c.name);
+    final seatCountController =
+        TextEditingController(text: c.seatCount.toString());
+    String? error;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text('Edit ${c.name}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                enabled: false,
+                controller: TextEditingController(text: c.code),
+                decoration: const InputDecoration(
+                  labelText: 'Sticker code',
+                  helperText: 'Fixed — matches physical ESP32 stickers',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: seatCountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Number of seats',
+                  helperText:
+                      'Increasing this adds seats — make sure new stickers use SEAT_${c.code}_<n>',
+                ),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 8),
+                Text(error!,
+                    style: const TextStyle(color: AppColors.red, fontSize: 12)),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                final seatCount = int.tryParse(seatCountController.text.trim());
+
+                if (name.isEmpty) {
+                  setDialogState(() => error = 'Name is required');
+                  return;
+                }
+                if (seatCount == null || seatCount < 1) {
+                  setDialogState(
+                      () => error = 'Seat count must be a positive number');
+                  return;
+                }
+
+                if (seatCount < c.seatCount) {
+                  final affected = await _futureReservations(c.code,
+                      seatNumberAbove: seatCount);
+                  if (affected.isNotEmpty) {
+                    if (!dialogContext.mounted) return;
+                    final proceed = await showDialog<bool>(
+                      context: dialogContext,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Seats have upcoming reservations'),
+                        content: Text(
+                            '${affected.length} upcoming reservation${affected.length == 1 ? '' : 's'} '
+                            'use a seat number above $seatCount. They will remain valid, but '
+                            '${c.name} will no longer offer that seat for new bookings. Continue?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            style:
+                                TextButton.styleFrom(foregroundColor: AppColors.red),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Reduce anyway'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (proceed != true) return;
+                  }
+                }
+
+                if (!dialogContext.mounted) return;
+                await _firestore.collection('classrooms').doc(c.code).update({
+                  'name': name,
+                  'seatCount': seatCount,
+                });
+
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Delete / hide ────────────────────────────────────────────────────────
 
   Future<void> _handleDelete(Classroom c) async {
     final adminUid = FirebaseAuth.instance.currentUser?.uid;
 
-    final reservationsQuery = await _firestore
-        .collection('reservations')
-        .where('classroomId', isEqualTo: c.code)
-        .where('status', isEqualTo: 'reserved')
-        .get();
-
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-    final futureDocs = reservationsQuery.docs.where((d) {
-      final date = _parseDate(d.data()['date'] as String? ?? '');
-      return date != null && !date.isBefore(todayDate);
-    }).toList();
+    final futureDocs = await _futureReservations(c.code);
 
     if (!mounted) return;
 
@@ -334,6 +464,11 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                                         color: AppColors.blue),
                                     onPressed: () => _toggleActive(c, true),
                                   ),
+                                IconButton(
+                                  tooltip: 'Edit',
+                                  icon: const Icon(Icons.edit_outlined, color: AppColors.blue),
+                                  onPressed: () => _showEditDialog(c),
+                                ),
                                 IconButton(
                                   tooltip: 'Delete',
                                   icon: const Icon(Icons.delete_outline, color: AppColors.red),
