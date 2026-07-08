@@ -11,16 +11,15 @@ import 'package:stickeep_app/screens/student/home_screen.dart';
 // composite index, permissions error, or the query simply times out).
 const _fallbackClassroomNames = ['Taub 1', 'Taub 2', 'Taub 3', 'Taub 4', 'Taub 5'];
 
-List<Classroom> _fallbackClassrooms() => List.generate(
-      5,
-      (i) => Classroom(
-        id: 'T\${i + 1}',
-        building: 'Taub',
-        roomName: '\${i + 1}',
-        order: i + 1,
-        active: true,
-      ),
-    );
+List<Classroom> _fallbackClassrooms() {
+  return [
+    Classroom(id: 'T1', building: 'Taub', roomName: '1', order: 1, active: true),
+    Classroom(id: 'T2', building: 'Taub', roomName: '2', order: 2, active: true),
+    Classroom(id: 'T3', building: 'Taub', roomName: '3', order: 3, active: true),
+    Classroom(id: 'T4', building: 'Taub', roomName: '4', order: 4, active: true),
+    Classroom(id: 'T5', building: 'Taub', roomName: '5', order: 5, active: true),
+  ];
+}
 
 class ClassroomScreen extends StatefulWidget {
   const ClassroomScreen({super.key});
