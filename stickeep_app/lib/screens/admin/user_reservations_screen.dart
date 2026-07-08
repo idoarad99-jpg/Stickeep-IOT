@@ -162,7 +162,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
                         a.timeStart.replaceAll(':', '');
                     final bKey = b.date.split('.').reversed.join() +
                         b.timeStart.replaceAll(':', '');
-                    return aKey.compareTo(bKey);
+                    return bKey.compareTo(aKey);
                   });
 
                 if (filtered.isEmpty) {
