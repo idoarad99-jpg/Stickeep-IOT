@@ -210,7 +210,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (buildings.length > 1) ...[
+                  if (buildings.isNotEmpty) ...[
                     const Text('Building', style: AppTextStyles.label),
                     const SizedBox(height: 8),
                     Wrap(
