@@ -99,7 +99,6 @@ class _SignupScreenState extends State<SignupScreen> {
       imageQuality: 80,
     );
     if (file == null) return;
-    print('[SignupScreen] Image selected: ${file.path}');
     final bytes = await file.readAsBytes();
     setState(() => _avatarBytes = bytes);
   }
@@ -135,7 +134,6 @@ class _SignupScreenState extends State<SignupScreen> {
         password: _passwordController.text.trim(),
       );
 
-      print('[SignupScreen] Auth account created — uid: ${credential.user!.uid}');
 
       // 2. Save registration request to Firestore
       final nfcCleaned = _nfcController.text
@@ -155,7 +153,6 @@ class _SignupScreenState extends State<SignupScreen> {
         'submittedAt': DateTime.now(),
       });
 
-      print('[SignupScreen] Firestore doc saved — studentId: ${_studentIdController.text.trim()}');
 
       if (!mounted) return;
 
@@ -188,7 +185,6 @@ class _SignupScreenState extends State<SignupScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('[SignupScreen] Unexpected error: $e');
       setState(() {
         _errorMessage = 'Something went wrong. Please try again.';
         _isLoading = false;

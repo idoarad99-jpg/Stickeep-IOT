@@ -69,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final credential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
 
-      print('[LoginScreen] Signed in — uid: ${credential.user!.uid}');
 
       final uid = credential.user!.uid;
 
@@ -85,7 +84,6 @@ class _LoginScreenState extends State<LoginScreen> {
         final data = studentDoc.data()!;
         final userName = data['name'] as String? ?? 'User';
         final userRole = data['role'] as String? ?? 'student';
-        print('[LoginScreen] role from Firestore: "$userRole"');
 
         await _saveOrClearRememberMe(email);
         if (!mounted) return;
@@ -171,7 +169,6 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      print('[LoginScreen] Unexpected error: $e');
       setState(() {
         _errorMessage = 'Something went wrong. Please try again.';
         _isLoading = false;
@@ -265,8 +262,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onBiometricPressed() {
-    print('[LoginScreen] Fingerprint / Face ID pressed');
-    // TODO: local_auth integration
   }
 
   @override

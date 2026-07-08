@@ -125,7 +125,6 @@ class _ScannerScreenState extends State<ScannerScreen>
                   .child(userEntry.key as String)
                   .child(resEntry.key as String)
                   .update({'qr_status': 'arrived'});
-              debugPrint('[Scanner] RTDB qr_status updated to arrived');
               break;
             }
           }
@@ -159,7 +158,6 @@ class _ScannerScreenState extends State<ScannerScreen>
         }
       }
     } catch (e) {
-      debugPrint('[Scanner] Firebase update error (non-fatal): $e');
     }
 
     if (!mounted) return;

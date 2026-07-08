@@ -42,21 +42,16 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final seatId = seatIdFromClassroom(widget.classroom, widget.seatNumber);
 
       // Read studentNumber first so it is guaranteed available for all writes
-      debugPrint('[Confirm] uid: $uid');
       final studentDoc = await FirebaseFirestore.instance
           .collection('students')
           .doc(uid)
           .get();
-      debugPrint('[Confirm] students/$uid exists: ${studentDoc.exists}');
       final studentData = studentDoc.data();
-      debugPrint('[Confirm] studentData full map: $studentData');
       // Try camelCase first, fall back to snake_case
       final studentNumber = ((studentData?['studentNumber'] ??
               studentData?['student_number'] ??
               '') as Object)
           .toString();
-      debugPrint('[Confirm] studentNumber resolved: "$studentNumber"');
-      debugPrint('[Confirm] lessonName: "${widget.lessonName}"');
 
       // Check 1: seat already reserved for this exact date+time slot
       if (seatId != null) {

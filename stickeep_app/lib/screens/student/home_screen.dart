@@ -289,7 +289,6 @@ class _NextReservationCard extends StatelessWidget {
                         data: next,
                         onScanArrival: qrToken.isNotEmpty
                             ? () {
-                                debugPrint(
                                     '[HomeScreen] Scan on arrival tapped, classroom: $classroom');
                                 Navigator.push(
                                   ctx,
