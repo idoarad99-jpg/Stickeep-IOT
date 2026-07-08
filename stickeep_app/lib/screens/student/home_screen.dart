@@ -227,7 +227,10 @@ class _NextReservationCard extends StatelessWidget {
                 final data = e.value as Map<dynamic, dynamic>;
                 final isUpcoming = data['is_upcoming'] as bool? ?? false;
                 final date = _parseDate(data['date'] as String? ?? '');
-                return isUpcoming && !date.isBefore(todayDate);
+                final qrStatus = data['qr_status'] as String? ?? '';
+                final nfcStatus = data['nfc_status'] as String? ?? '';
+                final alreadyConfirmed = qrStatus == 'arrived' || nfcStatus == 'approved';
+                return isUpcoming && !date.isBefore(todayDate) && !alreadyConfirmed;
               })
               .map((e) => Map<String, dynamic>.from(e.value as Map))
               .toList()
@@ -292,7 +295,7 @@ class _NextReservationCard extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (_) => ScannerScreen(
                                       classroom: classroom,
-                                      studentName: studentName,
+                                      studentName: _userName,
                                       reservationId: qrToken,
                                     ),
                                   ),

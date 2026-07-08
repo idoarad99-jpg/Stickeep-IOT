@@ -146,7 +146,8 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                       onScanArrival: (r.isUpcoming &&
                               r.qrToken != null &&
                               r.qrToken!.isNotEmpty &&
-                              r.qrStatus != 'arrived')
+                              r.qrStatus != 'arrived' &&
+                              r.nfcStatus != 'approved')
                           ? () => Navigator.push(
                                 context,
                                 MaterialPageRoute(
