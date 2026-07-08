@@ -95,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    final isAdmin = widget.userRole.toLowerCase() == 'admin';
+    final isAdmin = _userRole.toLowerCase() == 'admin';
     final displayName = _userName.isEmpty ? 'User' : _userName;
 
     return Scaffold(
@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _NextReservationCard(uid: uid),
+            _NextReservationCard(uid: uid, userName: _userName),
             const SizedBox(height: 24),
             const Text('What would you like to do?',
                 style: AppTextStyles.sectionTitle),
@@ -206,7 +206,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _NextReservationCard extends StatelessWidget {
   final String uid;
-  const _NextReservationCard({required this.uid});
+  final String userName;
+  const _NextReservationCard({required this.uid, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +296,7 @@ class _NextReservationCard extends StatelessWidget {
                                   MaterialPageRoute(
                                     builder: (_) => ScannerScreen(
                                       classroom: classroom,
-                                      studentName: _userName,
+                                      studentName: userName,
                                       reservationId: qrToken,
                                     ),
                                   ),
