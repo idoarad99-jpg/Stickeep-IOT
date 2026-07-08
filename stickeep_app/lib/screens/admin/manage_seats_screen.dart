@@ -253,6 +253,42 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
     }
   }
 
+  Future<void> _showEditSeatDialog(ClassroomSeat seat) async {
+    final labelController = TextEditingController(text: seat.label);
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Edit \${seat.seatId}'),
+        content: TextField(
+          controller: labelController,
+          decoration: const InputDecoration(
+            labelText: 'Label (optional)',
+            hintText: 'e.g. Window seat, Left side',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await _firestore
+                  .collection('classrooms')
+                  .doc(widget.classroom.id)
+                  .collection('seats')
+                  .doc(seat.seatId)
+                  .update({'label': labelController.text.trim()});
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

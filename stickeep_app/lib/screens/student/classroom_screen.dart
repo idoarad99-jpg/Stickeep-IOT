@@ -1,9 +1,26 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/classroom.dart';
 import 'package:stickeep_app/screens/student/seat_map_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
+
+// Used if Firestore's classrooms/ collection can't be loaded (missing
+// composite index, permissions error, or the query simply times out).
+const _fallbackClassroomNames = ['Taub 1', 'Taub 2', 'Taub 3', 'Taub 4', 'Taub 5'];
+
+List<Classroom> _fallbackClassrooms() => List.generate(
+      _fallbackClassroomNames.length,
+      (i) => Classroom(
+        code: 'T${i + 1}',
+        name: _fallbackClassroomNames[i],
+        seatCount: 5,
+        order: i + 1,
+        active: true,
+      ),
+    );
 
 class ClassroomScreen extends StatefulWidget {
   const ClassroomScreen({super.key});
@@ -13,15 +30,55 @@ class ClassroomScreen extends StatefulWidget {
 }
 
 class _ClassroomScreenState extends State<ClassroomScreen> {
-  String? _selectedBuilding;
   Classroom? _selectedClassroom;
   DateTime? _selectedDate;
   TimeOfDay? _timeStart;
   TimeOfDay? _timeEnd;
   final _lessonController = TextEditingController();
 
+  List<Classroom>? _classrooms;
+  bool _classroomsFallback = false;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _classroomsSub;
+  Timer? _classroomsTimeoutTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClassrooms();
+  }
+
+  void _loadClassrooms() {
+    _classroomsTimeoutTimer = Timer(const Duration(seconds: 5), () {
+      if (_classrooms == null && mounted) {
+        setState(() => _classroomsFallback = true);
+      }
+    });
+
+    _classroomsSub = FirebaseFirestore.instance
+        .collection('classrooms')
+        .where('active', isEqualTo: true)
+        .orderBy('order')
+        .snapshots()
+        .listen(
+      (snapshot) {
+        _classroomsTimeoutTimer?.cancel();
+        if (!mounted) return;
+        setState(() {
+          _classrooms = snapshot.docs.map(Classroom.fromDoc).toList();
+          _classroomsFallback = false;
+        });
+      },
+      onError: (_) {
+        _classroomsTimeoutTimer?.cancel();
+        if (mounted) setState(() => _classroomsFallback = true);
+      },
+    );
+  }
+
   @override
   void dispose() {
+    _classroomsSub?.cancel();
+    _classroomsTimeoutTimer?.cancel();
     _lessonController.dispose();
     super.dispose();
   }
@@ -85,137 +142,39 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             // ── Classroom ──────────────────────────────────────────────────
             const Text('Classroom', style: AppTextStyles.label),
             const SizedBox(height: 8),
-            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              // Filtering 'active' client-side (rather than chaining
-              // .where('active', ...).orderBy('order') server-side) avoids
-              // needing a composite Firestore index for this tiny collection.
-              stream: FirebaseFirestore.instance
-                  .collection('classrooms')
-                  .orderBy('order')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Text('Couldn\'t load classrooms: ${snapshot.error}',
-                      style: const TextStyle(color: AppColors.red, fontSize: 12));
-                }
-                if (!snapshot.hasData) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  );
-                }
-
-                final classrooms = snapshot.data!.docs
-                    .map(Classroom.fromDoc)
-                    .where((c) => c.active)
-                    .toList();
-
-                if (classrooms.isEmpty) {
-                  return const Text(
-                    'No classrooms available yet. Ask an admin to add one.',
-                    style: AppTextStyles.cardSubtitle,
-                  );
-                }
-
-                // Buildings in first-seen (admin `order`) order.
-                final buildings = <String>[];
-                for (final c in classrooms) {
-                  if (!buildings.contains(c.building)) buildings.add(c.building);
-                }
-
-                // Default to the first building until the user picks one.
-                final selectedBuilding =
-                    (_selectedBuilding != null && buildings.contains(_selectedBuilding))
-                        ? _selectedBuilding!
-                        : buildings.first;
-
-                final roomsInBuilding =
-                    classrooms.where((c) => c.building == selectedBuilding).toList();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (buildings.length > 1) ...[
-                      const Text('Building', style: AppTextStyles.label),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: buildings.map((building) {
-                          final selected = building == selectedBuilding;
-                          return GestureDetector(
-                            onTap: () => setState(() {
-                              _selectedBuilding = building;
-                              _selectedClassroom = null;
-                            }),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-                              decoration: BoxDecoration(
-                                color: selected ? AppColors.textPrimary : Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: selected
-                                      ? AppColors.textPrimary
-                                      : AppColors.border,
-                                ),
-                              ),
-                              child: Text(
-                                building,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: selected
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text('Room', style: AppTextStyles.label),
-                      const SizedBox(height: 8),
-                    ],
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: roomsInBuilding.map((room) {
-                        final selected = _selectedClassroom?.id == room.id;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedClassroom = room),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: selected ? AppColors.blue : Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: selected ? AppColors.blue : AppColors.border,
-                              ),
-                            ),
-                            child: Text(
-                              room.roomName,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color:
-                                    selected ? Colors.white : AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
+            Builder(builder: (context) {
+              if (_classroomsFallback) {
+                return _ClassroomChips(
+                  classrooms: _fallbackClassrooms(),
+                  selected: _selectedClassroom,
+                  onSelect: (room) => setState(() => _selectedClassroom = room),
                 );
-              },
-            ),
+              }
+
+              if (_classrooms == null) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+
+              if (_classrooms!.isEmpty) {
+                return const Text(
+                  'No classrooms available yet. Ask an admin to add one.',
+                  style: AppTextStyles.cardSubtitle,
+                );
+              }
+
+              return _ClassroomChips(
+                classrooms: _classrooms!,
+                selected: _selectedClassroom,
+                onSelect: (room) => setState(() => _selectedClassroom = room),
+              );
+            }),
             const SizedBox(height: 20),
 
             // ── Lesson name ────────────────────────────────────────────────
@@ -340,8 +299,9 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => SeatMapScreen(
-                            classroomId: _selectedClassroom!.id,
-                            classroomDisplayName: _selectedClassroom!.displayName,
+                            classroom: _selectedClassroom!.name,
+                            classroomCode: _selectedClassroom!.code,
+                            seatCount: _selectedClassroom!.seatCount,
                             lessonName: _lessonController.text.trim(),
                             date: _formatDate(_selectedDate!),
                             timeStart: _formatTime(_timeStart!),
@@ -355,6 +315,50 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ClassroomChips extends StatelessWidget {
+  final List<Classroom> classrooms;
+  final Classroom? selected;
+  final ValueChanged<Classroom> onSelect;
+
+  const _ClassroomChips({
+    required this.classrooms,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: classrooms.map((room) {
+        final isSelected = selected?.code == room.code;
+        return GestureDetector(
+          onTap: () => onSelect(room),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: isSelected ? AppColors.blue : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected ? AppColors.blue : AppColors.border,
+              ),
+            ),
+            child: Text(
+              room.name,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

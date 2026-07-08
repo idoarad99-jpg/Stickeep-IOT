@@ -198,7 +198,7 @@ class _SuccessScreenState extends State<SuccessScreen>
                             size: 13, color: AppColors.blue),
                         const SizedBox(width: 5),
                         Text(
-                          'Student ID: \${widget.studentNumber}',
+                          'Student ID: ${widget.studentNumber}',
                           style: const TextStyle(
                               fontSize: 10,
                               color: AppColors.blue,
