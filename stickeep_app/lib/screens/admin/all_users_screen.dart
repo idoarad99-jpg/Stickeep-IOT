@@ -197,7 +197,12 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               stream: _firestore.collection('students').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(),
+                    ),
+                  );
                 }
 
                 var docs = snapshot.data?.docs ?? [];

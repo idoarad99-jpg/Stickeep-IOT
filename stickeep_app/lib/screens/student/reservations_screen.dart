@@ -7,6 +7,7 @@ import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/seat_id.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 import 'package:stickeep_app/widgets/qr_code_dialog.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 
@@ -68,7 +69,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               stream: ref.onValue,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ReservationListSkeleton();
                 }
 
                 if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
@@ -195,7 +196,9 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               size: 48, color: AppColors.border),
           const SizedBox(height: 16),
           Text(
-            showUpcoming ? 'No upcoming reservations' : 'No reservations to show',
+            showUpcoming
+                ? 'You have no upcoming reservations yet. Tap \"New reservation\" to book a seat!'
+                : 'No past reservations to show.',
             style: AppTextStyles.cardSubtitle,
           ),
         ],

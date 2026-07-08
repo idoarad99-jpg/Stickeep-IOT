@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final first = upcoming.first;
     final data = first.value as Map<dynamic, dynamic>;
     if (context.mounted) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => ScannerScreen(classroom: data['classroom'] as String? ?? '', studentName: _userName, reservationId: first.key as String)));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => ScannerScreen(classroom: data['classroom'] as String? ?? '', studentName: _userName, reservationId: (data['qr_token'] as String? ?? '').trim())));
     }
   }
 

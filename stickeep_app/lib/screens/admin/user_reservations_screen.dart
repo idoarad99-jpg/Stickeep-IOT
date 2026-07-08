@@ -5,6 +5,7 @@ import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
 import 'package:stickeep_app/widgets/reservation_card.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class UserReservationsScreen extends StatefulWidget {
   final String uid;
@@ -123,13 +124,13 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
               stream: ref.onValue,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ReservationListSkeleton();
                 }
 
                 if (!snapshot.hasData ||
                     snapshot.data!.snapshot.value == null) {
                   return const Center(
-                    child: Text('No reservations',
+                    child: Text('This student has no reservations yet.',
                         style: AppTextStyles.cardSubtitle),
                   );
                 }
@@ -160,7 +161,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
 
                 if (filtered.isEmpty) {
                   return const Center(
-                    child: Text('No reservations match the filters',
+                    child: Text('No reservations match the selected filters. Try adjusting the filters above.',
                         style: AppTextStyles.cardSubtitle),
                   );
                 }
