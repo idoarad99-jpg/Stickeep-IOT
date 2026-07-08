@@ -1,32 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/recurrence_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/booking.dart';
-import 'package:stickeep_app/utils/seat_id.dart';
 
 class ConfirmScreen extends StatefulWidget {
   final String classroom;
-  final String classroomCode;
+  final String classroomId;
   final String lessonName;
   final String date;
   final String timeStart;
   final String timeEnd;
+  final String seatId;
   final int seatNumber;
-  final DatabaseReference seatsRef;
+  final String seatLabel;
 
   const ConfirmScreen({
     super.key,
     required this.classroom,
-    required this.classroomCode,
+    required this.classroomId,
     required this.lessonName,
     required this.date,
     required this.timeStart,
     required this.timeEnd,
+    required this.seatId,
     required this.seatNumber,
-    required this.seatsRef,
+    this.seatLabel = '',
   });
 
   @override
@@ -42,19 +42,16 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) throw Exception('Not logged in');
 
-      // Read studentNumber first so it is guaranteed available for all writes
       final studentDoc = await FirebaseFirestore.instance
           .collection('students')
           .doc(uid)
           .get();
       final studentData = studentDoc.data();
-      // Try camelCase first, fall back to snake_case
       final studentNumber = ((studentData?['studentNumber'] ??
               studentData?['student_number'] ??
               '') as Object)
           .toString();
-      // Stored cleaned (no colons) since signup; ESP32 needs the original
-      // colon-separated format, so re-insert a colon every 2 hex digits.
+
       final nfcCleaned = studentData?['nfcSerialNumber'] as String?;
       final nfcSerialNumber = (nfcCleaned == null || nfcCleaned.isEmpty)
           ? null
@@ -64,22 +61,18 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                     i, i + 2 > nfcCleaned.length ? nfcCleaned.length : i + 2)
             ].join(':');
 
-      final seatId = seatIdFromClassroom(widget.classroomCode, widget.seatNumber);
-
       // Check: seat already reserved for this exact date+time slot
-      if (seatId != null &&
-          await isSeatTaken(
-            seatId: seatId,
-            date: widget.date,
-            timeStart: widget.timeStart,
-            timeEnd: widget.timeEnd,
-          )) {
+      if (await isSeatTaken(
+        seatId: widget.seatId,
+        date: widget.date,
+        timeStart: widget.timeStart,
+        timeEnd: widget.timeEnd,
+      )) {
         setState(() => _isLoading = false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text('You already have a reservation for this time slot')),
+              content: Text('This seat is already reserved for this time slot')),
         );
         return;
       }
@@ -87,14 +80,14 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       final booking = await createReservation(
         uid: uid,
         classroom: widget.classroom,
-        classroomCode: widget.classroomCode,
+        classroomId: widget.classroomId,
         lessonName: widget.lessonName,
         date: widget.date,
         timeStart: widget.timeStart,
         timeEnd: widget.timeEnd,
+        seatId: widget.seatId,
         seatNumber: widget.seatNumber,
         studentNumber: studentNumber,
-        seatsRef: widget.seatsRef,
         nfcSerialNumber: nfcSerialNumber,
       );
 
@@ -105,16 +98,16 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         MaterialPageRoute(
           builder: (_) => RecurrenceScreen(
             classroom: widget.classroom,
-            classroomCode: widget.classroomCode,
+            classroomId: widget.classroomId,
             lessonName: widget.lessonName,
             date: widget.date,
             timeStart: widget.timeStart,
             timeEnd: widget.timeEnd,
+            seatId: widget.seatId,
             seatNumber: widget.seatNumber,
             studentNumber: studentNumber,
             firstReservationRtdbKey: booking.rtdbKey,
             firstReservationFirestoreId: booking.firestoreId,
-            seatsRef: widget.seatsRef,
           ),
         ),
       );
@@ -128,8 +121,11 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final time = widget.timeStart + '–' + widget.timeEnd;
+    final time = '${widget.timeStart}–${widget.timeEnd}';
     final lesson = widget.lessonName.isEmpty ? '—' : widget.lessonName;
+    final seatDisplay = widget.seatLabel.isNotEmpty
+        ? '${widget.seatNumber} (${widget.seatLabel})'
+        : widget.seatNumber.toString();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -185,7 +181,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
                   _InfoRow(label: 'Time', value: time),
                   _InfoRow(
                     label: 'Seat',
-                    value: widget.seatNumber.toString(),
+                    value: seatDisplay,
                     valueColor: AppColors.blue,
                   ),
                 ],

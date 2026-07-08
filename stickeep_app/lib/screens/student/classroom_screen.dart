@@ -12,11 +12,11 @@ import 'package:stickeep_app/screens/student/home_screen.dart';
 const _fallbackClassroomNames = ['Taub 1', 'Taub 2', 'Taub 3', 'Taub 4', 'Taub 5'];
 
 List<Classroom> _fallbackClassrooms() => List.generate(
-      _fallbackClassroomNames.length,
+      5,
       (i) => Classroom(
-        code: 'T${i + 1}',
-        name: _fallbackClassroomNames[i],
-        seatCount: 5,
+        id: 'T\${i + 1}',
+        building: 'Taub',
+        roomName: '\${i + 1}',
         order: i + 1,
         active: true,
       ),
@@ -299,9 +299,8 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => SeatMapScreen(
-                            classroom: _selectedClassroom!.name,
-                            classroomCode: _selectedClassroom!.code,
-                            seatCount: _selectedClassroom!.seatCount,
+                            classroomDisplayName: _selectedClassroom!.displayName,
+                            classroomId: _selectedClassroom!.id,
                             lessonName: _lessonController.text.trim(),
                             date: _formatDate(_selectedDate!),
                             timeStart: _formatTime(_timeStart!),
@@ -336,7 +335,7 @@ class _ClassroomChips extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: classrooms.map((room) {
-        final isSelected = selected?.code == room.code;
+        final isSelected = selected?.id == room.id;
         return GestureDetector(
           onTap: () => onSelect(room),
           child: Container(
@@ -349,7 +348,7 @@ class _ClassroomChips extends StatelessWidget {
               ),
             ),
             child: Text(
-              room.name,
+              room.displayName,
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,

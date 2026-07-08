@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:stickeep_app/utils/seat_id.dart';
 
 class BookingResult {
   final String rtdbKey;
@@ -35,29 +34,31 @@ Future<bool> isSeatTaken({
   return existing.docs.isNotEmpty;
 }
 
-/// Creates a single reservation across RTDB + Firestore + the seats
-/// collection, mirroring the writes the booking flow has always made.
-/// Does NOT check availability first — call [isSeatTaken] beforehand.
+/// Creates a single reservation across RTDB + Firestore + the seats collection.
 Future<BookingResult> createReservation({
   required String uid,
   required String classroom,
-  required String classroomCode,
+  required String classroomId,
   required String lessonName,
   required String date,
   required String timeStart,
   required String timeEnd,
+  required String seatId,
   required int seatNumber,
   required String studentNumber,
-  required DatabaseReference seatsRef,
   String? recurringGroupId,
   String? nfcSerialNumber,
 }) async {
-  final seatId = seatIdFromClassroom(classroomCode, seatNumber);
-  final firestoreRef = FirebaseFirestore.instance.collection('reservations').doc();
+  final firestoreRef =
+      FirebaseFirestore.instance.collection('reservations').doc();
 
-  await seatsRef.child('seat_' + seatNumber.toString()).update({'status': 'reserved'});
+  // Hardware-facing: write reserved status to RTDB at seats/{seatId}
+  await FirebaseDatabase.instance
+      .ref('seats/$seatId')
+      .update({'status': 'reserved'});
 
-  final reservationRef = FirebaseDatabase.instance.ref('reservations/' + uid).push();
+  final reservationRef =
+      FirebaseDatabase.instance.ref('reservations/$uid').push();
 
   await reservationRef.set({
     'classroom': classroom,
@@ -67,11 +68,10 @@ Future<BookingResult> createReservation({
     'time_end': timeEnd,
     'seat_number': seatNumber,
     'student_number': studentNumber,
-    'seat_id': seatId ?? '',
+    'seat_id': seatId,
     'qr_token': firestoreRef.id,
     'is_upcoming': true,
     'created_at': DateTime.now().toIso8601String(),
-    // Numeric sort key: YYYYMMDDHHMM — used by Flutter + ESP32 to sort reservations
     'sort_key': int.parse(
       date.split('.').reversed.join() + timeStart.replaceAll(':', ''),
     ),
@@ -79,7 +79,7 @@ Future<BookingResult> createReservation({
   });
 
   await firestoreRef.set({
-    'classroomId': classroomCode,
+    'classroomId': classroomId,
     'lessonName': lessonName,
     'date': date,
     'startTime': timeStart,
@@ -88,37 +88,37 @@ Future<BookingResult> createReservation({
     'status': 'reserved',
     'userId': uid,
     'studentNumber': studentNumber,
-    'seatId': seatId ?? '',
+    'seatId': seatId,
     'createdAt': FieldValue.serverTimestamp(),
     'qrToken': firestoreRef.id,
     if (recurringGroupId != null) 'recurringGroupId': recurringGroupId,
   });
 
-  if (seatId != null) {
-    final seatDocRef = FirebaseFirestore.instance.collection('seats').doc(seatId);
-    await seatDocRef.set({
-      'status': 'reserved',
-      'studentNumber': studentNumber,
-      if (nfcSerialNumber != null) 'nfcSerialNumber': nfcSerialNumber,
-      'startTime': timeStart,
-      'endTime': timeEnd,
-      'date': date,
-      'classroomId': classroomCode,
-      'reservationId': firestoreRef.id,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
-    await seatDocRef.collection('reservations').doc(firestoreRef.id).set({
-      'studentNumber': studentNumber,
-      'userId': uid,
-      'date': date,
-      'startTime': timeStart,
-      'endTime': timeEnd,
-      'classroomId': classroomCode,
-      'status': 'reserved',
-      'createdAt': FieldValue.serverTimestamp(),
-      'qrToken': firestoreRef.id,
-    });
-  }
+  final seatDocRef =
+      FirebaseFirestore.instance.collection('seats').doc(seatId);
+  await seatDocRef.set({
+    'status': 'reserved',
+    'studentNumber': studentNumber,
+    if (nfcSerialNumber != null) 'nfcSerialNumber': nfcSerialNumber,
+    'startTime': timeStart,
+    'endTime': timeEnd,
+    'date': date,
+    'classroomId': classroomId,
+    'reservationId': firestoreRef.id,
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
+
+  await seatDocRef.collection('reservations').doc(firestoreRef.id).set({
+    'studentNumber': studentNumber,
+    'userId': uid,
+    'date': date,
+    'startTime': timeStart,
+    'endTime': timeEnd,
+    'classroomId': classroomId,
+    'status': 'reserved',
+    'createdAt': FieldValue.serverTimestamp(),
+    'qrToken': firestoreRef.id,
+  });
 
   return BookingResult(
     rtdbKey: reservationRef.key!,
@@ -127,8 +127,7 @@ Future<BookingResult> createReservation({
   );
 }
 
-/// Tags an already-created reservation (identified by [rtdbKey] / [firestoreId])
-/// as belonging to recurring group [recurringGroupId], across RTDB + Firestore.
+/// Tags an already-created reservation as belonging to recurring group.
 Future<void> tagReservationAsRecurring({
   required String uid,
   required String rtdbKey,
