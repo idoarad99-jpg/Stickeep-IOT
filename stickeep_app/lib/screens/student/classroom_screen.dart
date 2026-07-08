@@ -30,6 +30,7 @@ class ClassroomScreen extends StatefulWidget {
 
 class _ClassroomScreenState extends State<ClassroomScreen> {
   Classroom? _selectedClassroom;
+  String? _selectedBuilding;
   DateTime? _selectedDate;
   TimeOfDay? _timeStart;
   TimeOfDay? _timeEnd;
@@ -143,10 +144,35 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             const SizedBox(height: 8),
             Builder(builder: (context) {
               if (_classroomsFallback) {
-                return _ClassroomChips(
-                  classrooms: _fallbackClassrooms(),
-                  selected: _selectedClassroom,
-                  onSelect: (room) => setState(() => _selectedClassroom = room),
+                final fallback = _fallbackClassrooms();
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: fallback.map((room) {
+                    final selected = _selectedClassroom?.id == room.id;
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedClassroom = room),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: selected ? AppColors.blue : Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: selected ? AppColors.blue : AppColors.border,
+                          ),
+                        ),
+                        child: Text(
+                          room.displayName,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: selected ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 );
               }
 
@@ -168,10 +194,93 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                 );
               }
 
-              return _ClassroomChips(
-                classrooms: _classrooms!,
-                selected: _selectedClassroom,
-                onSelect: (room) => setState(() => _selectedClassroom = room),
+              final buildings = <String>[];
+              for (final c in _classrooms!) {
+                if (!buildings.contains(c.building)) buildings.add(c.building);
+              }
+
+              final selectedBuilding =
+                  (_selectedBuilding != null && buildings.contains(_selectedBuilding))
+                      ? _selectedBuilding!
+                      : buildings.first;
+
+              final roomsInBuilding =
+                  _classrooms!.where((c) => c.building == selectedBuilding).toList();
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (buildings.length > 1) ...[
+                    const Text('Building', style: AppTextStyles.label),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: buildings.map((building) {
+                        final selected = building == selectedBuilding;
+                        return GestureDetector(
+                          onTap: () => setState(() {
+                            _selectedBuilding = building;
+                            _selectedClassroom = null;
+                          }),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: selected ? AppColors.textPrimary : Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: selected
+                                    ? AppColors.textPrimary
+                                    : AppColors.border,
+                              ),
+                            ),
+                            child: Text(
+                              building,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: selected ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Room', style: AppTextStyles.label),
+                    const SizedBox(height: 8),
+                  ],
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: roomsInBuilding.map((room) {
+                      final selected = _selectedClassroom?.id == room.id;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedClassroom = room),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: selected ? AppColors.blue : Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: selected ? AppColors.blue : AppColors.border,
+                            ),
+                          ),
+                          child: Text(
+                            room.roomName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: selected ? Colors.white : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
               );
             }),
             const SizedBox(height: 20),
