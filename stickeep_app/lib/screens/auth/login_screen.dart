@@ -404,12 +404,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
               const SizedBox(height: 12),
 
-              // Biometric
-              OutlinedButton.icon(
-                onPressed: _isLoading ? null : _onBiometricPressed,
-                icon: const Icon(Icons.fingerprint),
-                label: const Text('Fingerprint / Face ID'),
-              ),
               const SizedBox(height: 32),
 
               // Sign up
