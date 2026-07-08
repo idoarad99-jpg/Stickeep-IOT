@@ -53,6 +53,16 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
               studentData?['student_number'] ??
               '') as Object)
           .toString();
+      // Stored cleaned (no colons) since signup; ESP32 needs the original
+      // colon-separated format, so re-insert a colon every 2 hex digits.
+      final nfcCleaned = studentData?['nfcSerialNumber'] as String?;
+      final nfcSerialNumber = (nfcCleaned == null || nfcCleaned.isEmpty)
+          ? null
+          : [
+              for (var i = 0; i < nfcCleaned.length; i += 2)
+                nfcCleaned.substring(
+                    i, i + 2 > nfcCleaned.length ? nfcCleaned.length : i + 2)
+            ].join(':');
 
       final seatId = seatIdFromClassroom(widget.classroomCode, widget.seatNumber);
 
@@ -85,6 +95,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         seatNumber: widget.seatNumber,
         studentNumber: studentNumber,
         seatsRef: widget.seatsRef,
+        nfcSerialNumber: nfcSerialNumber,
       );
 
       if (!mounted) return;

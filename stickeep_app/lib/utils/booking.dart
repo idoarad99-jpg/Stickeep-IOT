@@ -50,6 +50,7 @@ Future<BookingResult> createReservation({
   required String studentNumber,
   required DatabaseReference seatsRef,
   String? recurringGroupId,
+  String? nfcSerialNumber,
 }) async {
   final seatId = seatIdFromClassroom(classroomCode, seatNumber);
   final firestoreRef = FirebaseFirestore.instance.collection('reservations').doc();
@@ -98,6 +99,7 @@ Future<BookingResult> createReservation({
     await seatDocRef.set({
       'status': 'reserved',
       'studentNumber': studentNumber,
+      if (nfcSerialNumber != null) 'nfcSerialNumber': nfcSerialNumber,
       'startTime': timeStart,
       'endTime': timeEnd,
       'date': date,
