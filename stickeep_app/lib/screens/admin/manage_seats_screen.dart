@@ -259,7 +259,7 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text('Edit \${seat.seatId}'),
+        title: Text('Edit ${seat.seatId}'),
         content: TextField(
           controller: labelController,
           decoration: const InputDecoration(
