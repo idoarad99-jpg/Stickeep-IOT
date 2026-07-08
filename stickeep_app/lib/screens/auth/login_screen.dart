@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stickeep_app/screens/auth/signup_screen.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/classroom_seed.dart';
 
 class LoginScreen extends StatefulWidget {
   final String initialEmail;
@@ -86,6 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final userRole = data['role'] as String? ?? 'student';
 
         await _saveOrClearRememberMe(email);
+        await ensureDefaultClassroomsSeeded();
         if (!mounted) return;
 
         Navigator.pushReplacement(

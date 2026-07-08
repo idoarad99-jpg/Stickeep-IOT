@@ -9,8 +9,6 @@ import 'package:stickeep_app/screens/student/home_screen.dart';
 
 // Used if Firestore's classrooms/ collection can't be loaded (missing
 // composite index, permissions error, or the query simply times out).
-const _fallbackClassroomNames = ['Taub 1', 'Taub 2', 'Taub 3', 'Taub 4', 'Taub 5'];
-
 List<Classroom> _fallbackClassrooms() {
   return [
     Classroom(id: 'T1', building: 'Taub', roomName: '1', order: 1, active: true),
@@ -422,50 +420,6 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ClassroomChips extends StatelessWidget {
-  final List<Classroom> classrooms;
-  final Classroom? selected;
-  final ValueChanged<Classroom> onSelect;
-
-  const _ClassroomChips({
-    required this.classrooms,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: classrooms.map((room) {
-        final isSelected = selected?.id == room.id;
-        return GestureDetector(
-          onTap: () => onSelect(room),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected ? AppColors.blue : Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? AppColors.blue : AppColors.border,
-              ),
-            ),
-            child: Text(
-              room.displayName,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : AppColors.textPrimary,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 }
