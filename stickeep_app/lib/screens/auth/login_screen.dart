@@ -262,8 +262,6 @@ class _LoginScreenState extends State<LoginScreen> {
     resetEmailController.dispose();
   }
 
-  void _onBiometricPressed() {}
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
