@@ -85,7 +85,7 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
-                Text(error!, style: const TextStyle(color: AppColors.red, fontSize: 12)),
+                Text(error!, style: TextStyle(color: AppColors.red, fontSize: 12)),
               ],
             ],
           ),
@@ -292,7 +292,7 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.purple,
         title: Text(widget.classroom.displayName, style: const TextStyle(color: Colors.white)),
@@ -329,7 +329,7 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
               ),
               Expanded(
                 child: seats.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text('No seats yet — add one above',
                             style: AppTextStyles.cardSubtitle),
                       )
@@ -342,9 +342,9 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.border),
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: AppColors.cardShadow,
                             ),
                             child: Row(
                               children: [
@@ -366,7 +366,7 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
                                                 color: AppColors.gray,
                                                 borderRadius: BorderRadius.circular(4),
                                               ),
-                                              child: const Text('Hidden',
+                                              child: Text('Hidden',
                                                   style: TextStyle(
                                                       fontSize: 10,
                                                       color: AppColors.textSecondary)),
@@ -383,18 +383,18 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
                                 if (!seat.active)
                                   IconButton(
                                     tooltip: 'Restore',
-                                    icon: const Icon(Icons.visibility_outlined,
+                                    icon: Icon(Icons.visibility_outlined,
                                         color: AppColors.blue),
                                     onPressed: () => _toggleActive(seat, true),
                                   ),
                                 IconButton(
                                   tooltip: 'Edit label',
-                                  icon: const Icon(Icons.edit_outlined, color: AppColors.blue),
+                                  icon: Icon(Icons.edit_outlined, color: AppColors.blue),
                                   onPressed: () => _showEditSeatDialog(seat),
                                 ),
                                 IconButton(
                                   tooltip: 'Delete',
-                                  icon: const Icon(Icons.delete_outline, color: AppColors.red),
+                                  icon: Icon(Icons.delete_outline, color: AppColors.red),
                                   onPressed: () => _handleDelete(seat),
                                 ),
                               ],

@@ -46,9 +46,9 @@ class DetailScreen extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border),
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: AppColors.cardShadow,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,7 +60,7 @@ class DetailScreen extends StatelessWidget {
                           style: AppTextStyles.cardTitle),
                       reservation.isUpcoming
                           ? StatusTag.reserved()
-                          : const StatusTag(
+                          : StatusTag(
                               label: 'Past',
                               backgroundColor: AppColors.gray,
                               textColor: AppColors.textSecondary,
@@ -73,7 +73,7 @@ class DetailScreen extends StatelessWidget {
                         style: AppTextStyles.cardSubtitle),
                   ],
                   const SizedBox(height: 12),
-                  const Divider(color: AppColors.border),
+                  Divider(color: AppColors.border),
                   const SizedBox(height: 12),
                   _InfoRow(
                       icon: Icons.calendar_today_outlined,
@@ -103,7 +103,7 @@ class DetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            const Text('Status timeline', style: AppTextStyles.sectionTitle),
+            Text('Status timeline', style: AppTextStyles.sectionTitle),
             const SizedBox(height: 12),
             _TimelineStep(
               icon: Icons.check_circle_outline,
@@ -145,7 +145,7 @@ class DetailScreen extends StatelessWidget {
                 onPressed: () => _cancel(context),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.red,
-                  side: const BorderSide(color: AppColors.red),
+                  side: BorderSide(color: AppColors.red),
                 ),
                 child: const Text('Cancel reservation'),
               ),
@@ -229,7 +229,7 @@ class _TimelineStep extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,

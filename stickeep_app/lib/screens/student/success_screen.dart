@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
 import 'package:stickeep_app/screens/student/scanner_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class SuccessScreen extends StatefulWidget {
   final String email;
@@ -62,7 +63,7 @@ class _SuccessScreenState extends State<SuccessScreen>
     final lessonDisplay = widget.lesson.isEmpty ? '—' : widget.lesson;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.blue,
         automaticallyImplyLeading: false,
@@ -80,11 +81,11 @@ class _SuccessScreenState extends State<SuccessScreen>
               child: Container(
                 width: 48,
                 height: 48,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.greenLight,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_circle,
                   size: 26,
                   color: AppColors.green,
@@ -109,7 +110,7 @@ class _SuccessScreenState extends State<SuccessScreen>
             const SizedBox(height: 16),
 
             // ── Heading ──────────────────────────────────────────────────────
-            const Text(
+            Text(
               "You're all set!",
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -121,22 +122,17 @@ class _SuccessScreenState extends State<SuccessScreen>
             const SizedBox(height: 24),
 
             // ── Info card ────────────────────────────────────────────────────
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.gray,
-                borderRadius: BorderRadius.circular(8),
-              ),
+            AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Email row
                   Row(
                     children: [
-                      const Icon(Icons.email,
+                      Icon(Icons.email,
                           size: 14, color: AppColors.blue),
                       const SizedBox(width: 6),
-                      const Text(
+                      Text(
                         'Email sent to',
                         style: TextStyle(
                             fontSize: 11, color: AppColors.textSecondary),
@@ -146,14 +142,14 @@ class _SuccessScreenState extends State<SuccessScreen>
                   const SizedBox(height: 2),
                   Text(
                     widget.email,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: AppColors.blue,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const Divider(color: AppColors.border, height: 1),
+                  Divider(color: AppColors.border, height: 1),
                   const SizedBox(height: 10),
 
                   // Classroom + seat / Date
@@ -162,12 +158,12 @@ class _SuccessScreenState extends State<SuccessScreen>
                     children: [
                       Text(
                         '${widget.classroom}  •  Seat ${widget.seat}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.textSecondary),
                       ),
                       Text(
                         widget.date,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.textSecondary),
                       ),
                     ],
@@ -180,12 +176,12 @@ class _SuccessScreenState extends State<SuccessScreen>
                     children: [
                       Text(
                         lessonDisplay,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.textSecondary),
                       ),
                       Text(
                         widget.time,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 10, color: AppColors.textSecondary),
                       ),
                     ],
@@ -194,12 +190,12 @@ class _SuccessScreenState extends State<SuccessScreen>
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.badge_outlined,
+                        Icon(Icons.badge_outlined,
                             size: 13, color: AppColors.blue),
                         const SizedBox(width: 5),
                         Text(
                           'Student ID: ${widget.studentNumber}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 10,
                               color: AppColors.blue,
                               fontWeight: FontWeight.w600),
@@ -221,12 +217,12 @@ class _SuccessScreenState extends State<SuccessScreen>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.repeat, size: 16, color: AppColors.blue),
+                    Icon(Icons.repeat, size: 16, color: AppColors.blue),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         widget.recurrenceSummary!,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12, color: AppColors.blue),
                       ),
                     ),
@@ -240,7 +236,7 @@ class _SuccessScreenState extends State<SuccessScreen>
             ElevatedButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(
+                AppPageRoute(
                   builder: (_) => ScannerScreen(
                     classroom: widget.classroom,
                     studentName: widget.studentName,
@@ -260,7 +256,7 @@ class _SuccessScreenState extends State<SuccessScreen>
             ElevatedButton(
               onPressed: () => Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const ReservationsScreen()),
+                AppPageRoute(builder: (_) => const ReservationsScreen()),
               ),
               child: const Text('View my reservations'),
             ),

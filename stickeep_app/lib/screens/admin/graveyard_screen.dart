@@ -25,7 +25,7 @@ class GraveyardScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('No cancelled reservations',
                   style: AppTextStyles.cardSubtitle),
             );
@@ -59,7 +59,7 @@ class GraveyardScreen extends StatelessWidget {
                       children: [
                         Text(data['classroom'] ?? '—',
                             style: AppTextStyles.cardTitle),
-                        const StatusTag(
+                        StatusTag(
                           label: 'Cancelled',
                           backgroundColor: AppColors.gray,
                           textColor: AppColors.textSecondary,
@@ -79,7 +79,7 @@ class GraveyardScreen extends StatelessWidget {
                         style: AppTextStyles.label),
                     if ((data['cancelled_by'] as String?) == 'admin') ...[
                       const SizedBox(height: 4),
-                      const Text('⚠️ Cancelled by admin',
+                      Text('⚠️ Cancelled by admin',
                           style: TextStyle(
                               fontSize: 11,
                               color: AppColors.red,

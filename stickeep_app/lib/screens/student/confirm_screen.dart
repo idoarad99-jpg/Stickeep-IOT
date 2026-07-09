@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/recurrence_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/booking.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class ConfirmScreen extends StatefulWidget {
   final String classroom;
@@ -95,7 +96,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
+        AppPageRoute(
           builder: (_) => RecurrenceScreen(
             classroom: widget.classroom,
             classroomId: widget.classroomId,
@@ -128,7 +129,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         : widget.seatNumber.toString();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.blue,
         title: const Text('Confirm reservation'),
@@ -143,15 +144,15 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
               child: Container(
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.greenLight,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check, size: 24, color: AppColors.green),
+                child: Icon(Icons.check, size: 24, color: AppColors.green),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'Almost done!',
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -161,7 +162,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Please review your reservation',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
@@ -232,7 +233,7 @@ class _InfoRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 11, color: AppColors.textSecondary)),
           Text(value,
               style: TextStyle(

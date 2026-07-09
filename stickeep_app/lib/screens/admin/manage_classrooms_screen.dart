@@ -7,6 +7,7 @@ import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/screens/admin/manage_seats_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class ManageClassroomsScreen extends StatefulWidget {
   const ManageClassroomsScreen({super.key});
@@ -78,13 +79,13 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'You\'ll add individual seats (with their sticker codes) after creating the room.',
                 style: AppTextStyles.cardSubtitle,
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
-                Text(error!, style: const TextStyle(color: AppColors.red, fontSize: 12)),
+                Text(error!, style: TextStyle(color: AppColors.red, fontSize: 12)),
               ],
             ],
           ),
@@ -160,7 +161,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
-                Text(error!, style: const TextStyle(color: AppColors.red, fontSize: 12)),
+                Text(error!, style: TextStyle(color: AppColors.red, fontSize: 12)),
               ],
             ],
           ),
@@ -321,7 +322,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.purple,
         title: const Text('Manage classrooms', style: TextStyle(color: Colors.white)),
@@ -358,7 +359,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
               ),
               Expanded(
                 child: classrooms.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text('No classrooms yet',
                             style: AppTextStyles.cardSubtitle),
                       )
@@ -371,9 +372,9 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: AppColors.border),
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: AppColors.cardShadow,
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,7 +398,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                                                 color: AppColors.gray,
                                                 borderRadius: BorderRadius.circular(4),
                                               ),
-                                              child: const Text('Hidden',
+                                              child: Text('Hidden',
                                                   style: TextStyle(
                                                       fontSize: 10,
                                                       color: AppColors.textSecondary)),
@@ -408,18 +409,18 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                                     if (!c.active)
                                       IconButton(
                                         tooltip: 'Restore',
-                                        icon: const Icon(Icons.visibility_outlined,
+                                        icon: Icon(Icons.visibility_outlined,
                                             color: AppColors.blue),
                                         onPressed: () => _toggleActive(c, true),
                                       ),
                                     IconButton(
                                       tooltip: 'Edit',
-                                      icon: const Icon(Icons.edit_outlined, color: AppColors.blue),
+                                      icon: Icon(Icons.edit_outlined, color: AppColors.blue),
                                       onPressed: () => _showEditDialog(c),
                                     ),
                                     IconButton(
                                       tooltip: 'Delete',
-                                      icon: const Icon(Icons.delete_outline, color: AppColors.red),
+                                      icon: Icon(Icons.delete_outline, color: AppColors.red),
                                       onPressed: () => _handleDelete(c),
                                     ),
                                   ],
@@ -438,14 +439,14 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
                                       child: OutlinedButton(
                                         onPressed: () => Navigator.push(
                                           context,
-                                          MaterialPageRoute(
+                                          AppPageRoute(
                                             builder: (_) => ManageSeatsScreen(classroom: c),
                                           ),
                                         ),
                                         style: OutlinedButton.styleFrom(
                                           minimumSize: const Size(double.infinity, 36),
                                           foregroundColor: AppColors.purple,
-                                          side: const BorderSide(color: AppColors.purple),
+                                          side: BorderSide(color: AppColors.purple),
                                         ),
                                         child: Text(seatCount == null
                                             ? '🪑  Manage seats'

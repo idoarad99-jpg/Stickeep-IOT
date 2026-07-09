@@ -6,6 +6,7 @@ import 'package:stickeep_app/screens/auth/signup_screen.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/classroom_seed.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class LoginScreen extends StatefulWidget {
   final String initialEmail;
@@ -92,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
+          AppPageRoute(
             builder: (_) => HomeScreen(
               userName: userName,
               userRole: userRole,
@@ -138,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
+            AppPageRoute(
               builder: (_) => HomeScreen(
                 userName: reqData['name'] as String? ?? 'User',
                 userRole: reqData['role'] as String? ?? 'student',
@@ -269,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         title: const Text('Stickeep'),
         centerTitle: true,
@@ -281,7 +282,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Avatar ──────────────────────────────────────────────────
-              const Center(
+              Center(
                 child: SizedBox(
                   width: 80,
                   height: 80,
@@ -301,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
 
               // Username
-              const Text('Email', style: AppTextStyles.label),
+              Text('Email', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _emailController,
@@ -314,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 16),
 
               // Password
-              const Text('Password', style: AppTextStyles.label),
+              Text('Password', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _passwordController,
@@ -404,7 +405,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
 
               // Sign up
-              const Center(
+              Center(
                 child: Text(
                   "Don't have an account?",
                   style: AppTextStyles.cardSubtitle,
@@ -416,7 +417,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? null
                     : () => Navigator.push(
                     context,
-                          MaterialPageRoute(
+                          AppPageRoute(
                               builder: (_) => const SignupScreen()),
                         ),
                 child: const Text('Sign up'),

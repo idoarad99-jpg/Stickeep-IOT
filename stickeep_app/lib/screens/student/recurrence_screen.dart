@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/student/success_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/booking.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 // Safety cap: never generate more occurrences than this in one go.
 const int _maxOccurrences = 26;
@@ -84,7 +85,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
+      AppPageRoute(
         builder: (_) => SuccessScreen(
           email: email,
           classroom: widget.classroom,
@@ -173,7 +174,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
     final canSubmit = !_repeatEnabled || _untilDate != null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.blue,
         automaticallyImplyLeading: false,
@@ -188,7 +189,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
             Text(
               'Your seat for ${widget.classroom} on ${widget.date} is confirmed.',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 24),
             Container(
@@ -210,7 +211,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
             ),
             if (_repeatEnabled) ...[
               const SizedBox(height: 20),
-              const Text('Every', style: AppTextStyles.label),
+              Text('Every', style: AppTextStyles.label),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -235,7 +236,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              const Text('Until', style: AppTextStyles.label),
+              Text('Until', style: AppTextStyles.label),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: _pickUntilDate,
@@ -250,7 +251,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.event_outlined,
+                      Icon(Icons.event_outlined,
                           size: 18, color: AppColors.textSecondary),
                       const SizedBox(width: 10),
                       Text(
@@ -269,7 +270,7 @@ class _RecurrenceScreenState extends State<RecurrenceScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'If a date is already booked by someone else, it will be skipped and you\'ll be notified.',
                 style: AppTextStyles.cardSubtitle,
               ),

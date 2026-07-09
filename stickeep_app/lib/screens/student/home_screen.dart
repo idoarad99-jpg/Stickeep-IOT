@@ -5,9 +5,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/admin_home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/theme/theme_controller.dart';
 import 'package:stickeep_app/screens/student/classroom_screen.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
 import 'package:stickeep_app/screens/student/scanner_screen.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 DateTime _parseDate(String d) {
   final p = d.split('.');
@@ -88,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final first = upcoming.first;
     final data = first.value as Map<dynamic, dynamic>;
     if (context.mounted) {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => ScannerScreen(classroom: data['classroom'] as String? ?? '', studentName: _userName, reservationId: (data['qr_token'] as String? ?? '').trim())));
+      Navigator.push(context, AppPageRoute(builder: (_) => ScannerScreen(classroom: data['classroom'] as String? ?? '', studentName: _userName, reservationId: (data['qr_token'] as String? ?? '').trim())));
     }
   }
 
@@ -99,106 +101,236 @@ class _HomeScreenState extends State<HomeScreen> {
     final displayName = _userName.isEmpty ? 'User' : _userName;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
-      appBar: AppBar(
-        backgroundColor: AppColors.blue,
-        automaticallyImplyLeading: false,
-        title: Text(
-          'Hi, $displayName 👋',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+      backgroundColor: AppColors.scaffoldBg,
+      body: CustomScrollView(
+        slivers: [
+          // ── Gradient greeting header ──────────────────────────────────
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 56, 20, 28),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.blue, AppColors.blue.withOpacity(0.75)],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(28),
+                  bottomRight: Radius.circular(28),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Hi, $displayName 👋',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Welcome back to Stickeep',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: ThemeController.instance.isDark ? 'Light mode' : 'Dark mode',
+                    icon: Icon(
+                      ThemeController.instance.isDark
+                          ? Icons.light_mode_outlined
+                          : Icons.dark_mode_outlined,
+                      color: Colors.white,
+                    ),
+                    onPressed: () => ThemeController.instance.toggle(),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: Colors.white),
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                      if (context.mounted) {
+                        Navigator.of(context)
+                            .pushNamedAndRemoveUntil('/', (r) => false);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (context.mounted) {
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/', (r) => false);
-              }
-            },
+
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                Transform.translate(
+                  offset: const Offset(0, -20),
+                  child: _NextReservationCard(uid: uid, userName: _userName),
+                ),
+                const SizedBox(height: 8),
+                Text('What would you like to do?',
+                    style: AppTextStyles.sectionTitle),
+                const SizedBox(height: 12),
+
+                // ── Quick action grid ─────────────────────────────────────
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.25,
+                  children: [
+                    _QuickActionTile(
+                      icon: Icons.event_seat_outlined,
+                      label: 'New reservation',
+                      color: AppColors.blue,
+                      onTap: () => Navigator.push(context,
+                          AppPageRoute(builder: (_) => const ClassroomScreen())),
+                    ),
+                    _QuickActionTile(
+                      icon: Icons.qr_code_scanner_outlined,
+                      label: 'Scan on arrival',
+                      color: AppColors.green,
+                      onTap: () => _scanSticker(context, uid),
+                    ),
+                    _QuickActionTile(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'My reservations',
+                      color: AppColors.amber,
+                      onTap: () => Navigator.push(
+                          context,
+                          AppPageRoute(
+                              builder: (_) =>
+                                  const ReservationsScreen(showUpcoming: true))),
+                    ),
+                    _QuickActionTile(
+                      icon: Icons.history_outlined,
+                      label: 'History',
+                      color: AppColors.purple,
+                      onTap: () => Navigator.push(
+                          context,
+                          AppPageRoute(
+                              builder: (_) =>
+                                  const ReservationsScreen(showUpcoming: false))),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                if (isAdmin) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.push(
+                        context,
+                        AppPageRoute(builder: (_) => const AdminHomeScreen()),
+                      ),
+                      icon: Icon(Icons.admin_panel_settings_outlined, color: AppColors.purple),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.purple,
+                        side: BorderSide(color: AppColors.purple),
+                        minimumSize: const Size(double.infinity, 46),
+                      ),
+                      label: const Text('Admin Panel'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.push(context,
+                        AppPageRoute(builder: (_) => const ReportScreen())),
+                    icon: Icon(Icons.warning_amber_rounded, color: AppColors.red),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.red,
+                      side: BorderSide(color: AppColors.red),
+                      minimumSize: const Size(double.infinity, 46),
+                    ),
+                    label: const Text('Report an issue'),
+                  ),
+                ),
+              ]),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _NextReservationCard(uid: uid, userName: _userName),
-            const SizedBox(height: 24),
-            const Text('What would you like to do?',
-                style: AppTextStyles.sectionTitle),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ClassroomScreen())),
-              child: const Text('🪑  New reservation'),
+    );
+  }
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionTile({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
             ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: () => _scanSticker(context, uid),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.green,
-                side: const BorderSide(color: AppColors.green),
-              ),
-              child: const Text('📲  Scan sticker on arrival'),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const Spacer(),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
             ),
-            const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          const ReservationsScreen(showUpcoming: true))),
-              child: const Text('📅  My reservations'),
-            ),
-            const SizedBox(height: 10),
-            // ── Reservation history ──────────────────────────────────────────
-            OutlinedButton(
-              onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          const ReservationsScreen(showUpcoming: false))),
-              child: const Text('🕐  Reservation history'),
-            ),
-            const SizedBox(height: 16),
-            const Divider(color: AppColors.border),
-            const SizedBox(height: 16),
-            if (isAdmin) ...[
-              OutlinedButton(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.purple,
-                  side: const BorderSide(color: AppColors.purple),
-                  minimumSize: const Size(double.infinity, 44),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('🔐  Admin Panel'),
-              ),
-              const SizedBox(height: 10),
-            ],
-            OutlinedButton(
-              onPressed: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const ReportScreen())),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.red,
-                side: const BorderSide(color: AppColors.red),
-                minimumSize: const Size(double.infinity, 44),
-              ),
-              child: const Text('⚠️  Report an issue'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -249,17 +381,11 @@ class _NextReservationCard extends StatelessWidget {
           if (upcoming.isNotEmpty) next = upcoming.first;
         }
 
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
+        return AppCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Next reservation', style: AppTextStyles.sectionTitle),
+              Text('Next reservation', style: AppTextStyles.sectionTitle),
               const SizedBox(height: 12),
               next == null
                   ? Row(
@@ -270,11 +396,11 @@ class _NextReservationCard extends StatelessWidget {
                             color: AppColors.blueLight,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.calendar_today_outlined,
+                          child: Icon(Icons.calendar_today_outlined,
                               size: 20, color: AppColors.blue),
                         ),
                         const SizedBox(width: 12),
-                        const Text('No upcoming reservations',
+                        Text('No upcoming reservations',
                             style: AppTextStyles.cardSubtitle),
                       ],
                     )
@@ -291,7 +417,7 @@ class _NextReservationCard extends StatelessWidget {
                             ? () {
                                 Navigator.push(
                                   ctx,
-                                  MaterialPageRoute(
+                                  AppPageRoute(
                                     builder: (_) => ScannerScreen(
                                       classroom: classroom,
                                       studentName: userName,
@@ -342,7 +468,7 @@ class _ReservationSummary extends StatelessWidget {
                 color: AppColors.blueLight,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.calendar_today_outlined,
+              child: Icon(Icons.calendar_today_outlined,
                   size: 20, color: AppColors.blue),
             ),
             const SizedBox(width: 12),
@@ -351,7 +477,7 @@ class _ReservationSummary extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(lesson,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -359,14 +485,14 @@ class _ReservationSummary extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '$classroom  •  Seat $seat  •  $time',
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 11, color: AppColors.textSecondary),
                   ),
                   if (studentNum.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       'Student ID: $studentNum',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 11, color: AppColors.textSecondary),
                     ),
                   ],
@@ -382,7 +508,7 @@ class _ReservationSummary extends StatelessWidget {
               ),
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: AppColors.green,
@@ -393,7 +519,7 @@ class _ReservationSummary extends StatelessWidget {
         ),
         if (onScanArrival != null) ...[
           const SizedBox(height: 12),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.border),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,

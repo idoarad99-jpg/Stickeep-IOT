@@ -7,6 +7,7 @@ import 'package:stickeep_app/screens/admin/reports_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/admin/user_search_screen.dart';
 import 'package:stickeep_app/screens/admin/manage_classrooms_screen.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -127,7 +128,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           height: 36,
                           child: ElevatedButton(
                             onPressed: () => Navigator.push(context,
-                                MaterialPageRoute(
+                                AppPageRoute(
                                     builder: (_) =>
                                         const PendingUsersScreen())),
                             style: ElevatedButton.styleFrom(
@@ -147,7 +148,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           height: 36,
                           child: OutlinedButton(
                             onPressed: () => Navigator.push(context,
-                                MaterialPageRoute(
+                                AppPageRoute(
                                     builder: (_) => const AllUsersScreen())),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.textPrimary,
@@ -166,7 +167,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           height: 36,
                           child: OutlinedButton(
                             onPressed: () => Navigator.push(context,
-                                MaterialPageRoute(
+                                AppPageRoute(
                                     builder: (_) =>
                                         const UserSearchScreen())),
                             style: OutlinedButton.styleFrom(
@@ -186,7 +187,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           height: 36,
                           child: OutlinedButton(
                             onPressed: () => Navigator.push(context,
-                                MaterialPageRoute(
+                                AppPageRoute(
                                     builder: (_) => const ReportsScreen())),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.textPrimary,
@@ -206,7 +207,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           height: 36,
                           child: OutlinedButton(
                             onPressed: () => Navigator.push(context,
-                                MaterialPageRoute(
+                                AppPageRoute(
                                     builder: (_) =>
                                         const ManageClassroomsScreen())),
                             style: OutlinedButton.styleFrom(

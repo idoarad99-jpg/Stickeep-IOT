@@ -28,14 +28,14 @@ void showQrDialog(
           const SizedBox(height: 12),
           Text(
             '$classroom  •  Seat $seat',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 12, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 2),
           Text(
             '$date  •  $time',
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 12, color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),

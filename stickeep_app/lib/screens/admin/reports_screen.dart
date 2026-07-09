@@ -25,7 +25,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final ref = FirebaseDatabase.instance.ref('reports');
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.purple,
         title: const Text('Reports'),
@@ -63,16 +63,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
           }
 
           if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.check_circle_outline,
-                      size: 48, color: AppColors.border),
-                  SizedBox(height: 16),
-                  Text('No reports yet', style: AppTextStyles.cardSubtitle),
-                ],
-              ),
+            return const EmptyState(
+              icon: Icons.check_circle_outline,
+              title: 'No reports yet',
+              subtitle: 'Everything looks fine around here.',
             );
           }
 
@@ -95,7 +89,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           }).toList();
 
           if (reports.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('No reports match the filters',
                   style: AppTextStyles.cardSubtitle),
             );
@@ -133,9 +127,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: isResolved
-                      ? const Color(0xFFF8FFF4)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(10),
+                      ? AppColors.greenLight.withOpacity(0.4)
+                      : AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isResolved
                         ? AppColors.green.withOpacity(0.3)
@@ -175,7 +169,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     // Student name
                     Row(
                       children: [
-                        const Icon(Icons.person_outline,
+                        Icon(Icons.person_outline,
                             size: 14,
                             color: AppColors.textSecondary),
                         const SizedBox(width: 4),
@@ -183,7 +177,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           studentName.isNotEmpty
                               ? studentName
                               : uid,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 12,
                               color: AppColors.textSecondary),
                         ),
@@ -194,13 +188,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
+                          Icon(Icons.location_on_outlined,
                               size: 14,
                               color: AppColors.textSecondary),
                           const SizedBox(width: 4),
                           Text(
                             locationParts.join(' · '),
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontSize: 12,
                                 color: AppColors.textSecondary),
                           ),
@@ -212,7 +206,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       Text(desc, style: AppTextStyles.cardSubtitle),
                     ],
                     const SizedBox(height: 10),
-                    const Divider(height: 1, color: AppColors.border),
+                    Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 8),
                     // Resolve button
                     GestureDetector(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/models/seat.dart';
 import 'package:stickeep_app/screens/student/confirm_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class SeatMapScreen extends StatefulWidget {
   final String classroomId;
@@ -122,7 +123,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             const Text('🕐', style: TextStyle(fontSize: 11)),
             const SizedBox(width: 3),
             Text(lastSeenText,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11, color: AppColors.textSecondary)),
           ],
         );
@@ -171,7 +172,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text('Couldn\'t load seats: ${snapshot.error}',
-                    style: const TextStyle(color: AppColors.red, fontSize: 12),
+                    style: TextStyle(color: AppColors.red, fontSize: 12),
                     textAlign: TextAlign.center),
               ),
             );
@@ -210,12 +211,10 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
               // ── Seat list ────────────────────────────────────────────────
               Expanded(
                 child: seats.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No seats set up in this room yet. Ask an admin to add one.',
-                          style: AppTextStyles.cardSubtitle,
-                          textAlign: TextAlign.center,
-                        ),
+                    ? const EmptyState(
+                        icon: Icons.event_seat_outlined,
+                        title: 'No seats yet',
+                        subtitle: 'Ask an admin to add one to this room.',
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -286,7 +285,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                             ),
                                             Text(
                                               seat.seatId,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 11,
                                                 color: AppColors.textSecondary,
                                               ),
@@ -299,7 +298,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                       if (isTaken)
                                         StatusTag.occupied()
                                       else if (isSelected)
-                                        const StatusTag(
+                                        StatusTag(
                                           label: 'Selected',
                                           backgroundColor: AppColors.blueLight,
                                           textColor: AppColors.blue,
@@ -325,7 +324,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                       : () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
+                            AppPageRoute(
                               builder: (_) => ConfirmScreen(
                                 classroom: widget.classroomDisplayName,
                                 classroomId: widget.classroomId,
@@ -369,7 +368,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
         const SizedBox(width: 4),
         Text(label,
             style:
-                const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }

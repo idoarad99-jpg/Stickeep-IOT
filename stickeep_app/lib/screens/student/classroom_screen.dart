@@ -6,6 +6,7 @@ import 'package:stickeep_app/models/classroom.dart';
 import 'package:stickeep_app/screens/student/seat_map_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 // Used if Firestore's classrooms/ collection can't be loaded (missing
 // composite index, permissions error, or the query simply times out).
@@ -141,7 +142,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
           icon: const Icon(Icons.home_outlined),
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
+            AppPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),
             (route) => false,
           ),
         ),title: const Text('New Reservation')),
@@ -151,7 +152,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── Classroom ──────────────────────────────────────────────────
-            const Text('Classroom', style: AppTextStyles.label),
+            Text('Classroom', style: AppTextStyles.label),
             const SizedBox(height: 8),
             Builder(builder: (context) {
               if (_classroomsFallback) {
@@ -163,7 +164,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                       Text(
                         'Couldn\'t load classrooms live — showing a fallback list. '
                         '($_classroomsError)',
-                        style: const TextStyle(color: AppColors.red, fontSize: 11),
+                        style: TextStyle(color: AppColors.red, fontSize: 11),
                       ),
                       const SizedBox(height: 8),
                     ],
@@ -213,7 +214,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
               }
 
               if (_classrooms!.isEmpty) {
-                return const Text(
+                return Text(
                   'No classrooms available yet. Ask an admin to add one.',
                   style: AppTextStyles.cardSubtitle,
                 );
@@ -236,7 +237,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (buildings.isNotEmpty) ...[
-                    const Text('Building', style: AppTextStyles.label),
+                    Text('Building', style: AppTextStyles.label),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -273,7 +274,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
-                    const Text('Room', style: AppTextStyles.label),
+                    Text('Room', style: AppTextStyles.label),
                     const SizedBox(height: 8),
                   ],
                   Wrap(
@@ -311,7 +312,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             const SizedBox(height: 20),
 
             // ── Lesson name ────────────────────────────────────────────────
-            const Text('Lesson name (optional)', style: AppTextStyles.label),
+            Text('Lesson name (optional)', style: AppTextStyles.label),
             const SizedBox(height: 8),
             TextField(
               controller: _lessonController,
@@ -320,7 +321,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             const SizedBox(height: 20),
 
             // ── Date ───────────────────────────────────────────────────────
-            const Text('Date', style: AppTextStyles.label),
+            Text('Date', style: AppTextStyles.label),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _pickDate,
@@ -334,7 +335,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined,
+                    Icon(Icons.calendar_today_outlined,
                         size: 18, color: AppColors.textSecondary),
                     const SizedBox(width: 10),
                     Text(
@@ -355,7 +356,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             const SizedBox(height: 20),
 
             // ── Time ───────────────────────────────────────────────────────
-            const Text('Time', style: AppTextStyles.label),
+            Text('Time', style: AppTextStyles.label),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -371,7 +372,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.access_time_outlined,
+                          Icon(Icons.access_time_outlined,
                               size: 18, color: AppColors.textSecondary),
                           const SizedBox(width: 8),
                           Text(
@@ -388,8 +389,8 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                     ),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text('→', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
                 ),
                 Expanded(
@@ -404,7 +405,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.access_time_outlined,
+                          Icon(Icons.access_time_outlined,
                               size: 18, color: AppColors.textSecondary),
                           const SizedBox(width: 8),
                           Text(
@@ -430,7 +431,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
               onPressed: _canProceed
                   ? () => Navigator.push(
                         context,
-                        MaterialPageRoute(
+                        AppPageRoute(
                           builder: (_) => SeatMapScreen(
                             classroomDisplayName: _selectedClassroom!.displayName,
                             classroomId: _selectedClassroom!.id,

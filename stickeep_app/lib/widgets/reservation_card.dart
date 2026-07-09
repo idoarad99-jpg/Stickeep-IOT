@@ -28,13 +28,13 @@ class ReservationCard extends StatelessWidget {
       case ReservationDisplayStatus.reserved:
         return StatusTag.reserved();
       case ReservationDisplayStatus.past:
-        return const StatusTag(
+        return StatusTag(
           label: 'Past',
           backgroundColor: AppColors.gray,
           textColor: AppColors.textSecondary,
         );
       case ReservationDisplayStatus.cancelled:
-        return const StatusTag(
+        return StatusTag(
           label: 'Cancelled',
           backgroundColor: AppColors.redLight,
           textColor: AppColors.red,
@@ -51,7 +51,7 @@ class ReservationCard extends StatelessWidget {
             color: AppColors.greenLight,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Text('✓ Checked in',
+          child: Text('✓ Checked in',
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.green)),
         );
       case 'declined':
@@ -61,7 +61,7 @@ class ReservationCard extends StatelessWidget {
             color: AppColors.redLight,
             borderRadius: BorderRadius.circular(4),
           ),
-          child: const Text('✗ Access denied',
+          child: Text('✗ Access denied',
               style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.red)),
         );
       case 'pending':
@@ -96,7 +96,7 @@ class ReservationCard extends StatelessWidget {
                 color: AppColors.greenLight,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text('NFC ✓',
+              child: Text('NFC ✓',
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -109,7 +109,7 @@ class ReservationCard extends StatelessWidget {
                 color: AppColors.redLight,
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: const Text('NFC ✗',
+              child: Text('NFC ✗',
                   style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -141,7 +141,7 @@ class ReservationCard extends StatelessWidget {
           color: AppColors.greenLight,
           borderRadius: BorderRadius.circular(4),
         ),
-        child: const Text('✓ Arrived',
+        child: Text('✓ Arrived',
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.green)),
       );
     }
@@ -152,14 +152,8 @@ class ReservationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -177,18 +171,18 @@ class ReservationCard extends StatelessWidget {
             ],
             Row(
               children: [
-                const Icon(Icons.calendar_today_outlined,
+                Icon(Icons.calendar_today_outlined,
                     size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
                 Text(reservation.date, style: AppTextStyles.label),
                 const SizedBox(width: 12),
-                const Icon(Icons.access_time_outlined,
+                Icon(Icons.access_time_outlined,
                     size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
                 Text('${reservation.timeStart}–${reservation.timeEnd}',
                     style: AppTextStyles.label),
                 const SizedBox(width: 12),
-                const Icon(Icons.chair_outlined,
+                Icon(Icons.chair_outlined,
                     size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
                 Text('Seat ${reservation.seatNumber}',
@@ -199,7 +193,7 @@ class ReservationCard extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.badge_outlined,
+                  Icon(Icons.badge_outlined,
                       size: 14, color: AppColors.textSecondary),
                   const SizedBox(width: 4),
                   Text('ID ${reservation.studentNumber}',
@@ -213,7 +207,7 @@ class ReservationCard extends StatelessWidget {
             if (displayStatus == ReservationDisplayStatus.reserved &&
                 (onCancel != null || onShowQr != null)) ...[
               const SizedBox(height: 12),
-              const Divider(height: 1, color: AppColors.border),
+              Divider(height: 1, color: AppColors.border),
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -221,7 +215,7 @@ class ReservationCard extends StatelessWidget {
                   if (onScanArrival != null)
                     GestureDetector(
                       onTap: onScanArrival,
-                      child: const Text(
+                      child: Text(
                         '📷 Scan on arrival',
                         style: TextStyle(
                           fontSize: 13,
@@ -233,7 +227,7 @@ class ReservationCard extends StatelessWidget {
                   if (onShowQr != null)
                     GestureDetector(
                       onTap: onShowQr,
-                      child: const Text(
+                      child: Text(
                         '📱 Show QR code',
                         style: TextStyle(
                           fontSize: 13,
@@ -245,7 +239,7 @@ class ReservationCard extends StatelessWidget {
                   if (onCancel != null)
                     GestureDetector(
                       onTap: onCancel,
-                      child: const Text(
+                      child: Text(
                         'Cancel reservation',
                         style: TextStyle(
                           fontSize: 13,

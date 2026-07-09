@@ -65,7 +65,7 @@ class _SignupScreenState extends State<SignupScreen> {
             const SizedBox(height: 8),
             if (!kIsWeb)
               ListTile(
-                leading: const Icon(
+                leading: Icon(
                   Icons.camera_alt_outlined,
                   color: AppColors.blue,
                 ),
@@ -76,7 +76,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 },
               ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.photo_library_outlined,
                 color: AppColors.blue,
               ),
@@ -215,7 +215,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         title: const Text('Create account'),
         centerTitle: true,
@@ -244,11 +244,11 @@ class _SignupScreenState extends State<SignupScreen> {
                             : Container(
                                 width: 80,
                                 height: 80,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: AppColors.blueLight,
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.person,
                                   size: 44,
                                   color: AppColors.blue,
@@ -260,7 +260,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           child: Container(
                             width: 24,
                             height: 24,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: AppColors.blue,
                               shape: BoxShape.circle,
                             ),
@@ -279,7 +279,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 32),
 
               // ── Full name ────────────────────────────────────────────────
-              const Text('Full name', style: AppTextStyles.label),
+              Text('Full name', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _nameController,
@@ -293,7 +293,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 16),
 
               // ── Email ────────────────────────────────────────────────────
-              const Text('Email', style: AppTextStyles.label),
+              Text('Email', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _emailController,
@@ -307,7 +307,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 16),
 
               // ── Password ─────────────────────────────────────────────────
-              const Text('Password', style: AppTextStyles.label),
+              Text('Password', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _passwordController,
@@ -331,13 +331,13 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 16),
 
               // ── Student ID (highlighted) ─────────────────────────────────
-              const Text('Student ID number', style: AppTextStyles.label),
+              Text('Student ID number', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _studentIdController,
                 keyboardType: TextInputType.number,
                 onChanged: (_) => setState(() {}),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.blue,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 3,
@@ -356,16 +356,16 @@ class _SignupScreenState extends State<SignupScreen> {
                   errorText: _required(_studentIdController),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.blue),
+                    borderSide: BorderSide(color: AppColors.blue),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppColors.blue),
+                    borderSide: BorderSide(color: AppColors.blue),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide:
-                        const BorderSide(color: AppColors.blue, width: 2),
+                        BorderSide(color: AppColors.blue, width: 2),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -378,7 +378,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 '⭐ This number will appear on your seat sticker',
                 style: TextStyle(
                   fontSize: 11,
@@ -389,7 +389,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 16),
 
               // ── NFC Card Serial Number (optional) ────────────────────────
-              const Text('NFC Card Serial Number', style: AppTextStyles.label),
+              Text('NFC Card Serial Number', style: AppTextStyles.label),
               const SizedBox(height: 6),
               TextField(
                 controller: _nfcController,
@@ -399,7 +399,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 '📱 Scan your Technion card with any NFC reader app to find this number',
                 style: TextStyle(
                   fontSize: 11,

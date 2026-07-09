@@ -9,6 +9,7 @@ import 'package:stickeep_app/screens/student/scanner_screen.dart';
 import 'package:stickeep_app/widgets/loading_skeleton.dart';
 import 'package:stickeep_app/widgets/qr_code_dialog.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class ReservationsScreen extends StatefulWidget {
   final bool showUpcoming;
@@ -53,7 +54,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
           icon: const Icon(Icons.home_outlined),
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
+            AppPageRoute(
                 builder: (_) => const HomeScreen(userName: '', userRole: '')),
             (route) => false,
           ),
@@ -153,7 +154,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                               r.nfcStatus != 'approved')
                           ? () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
+                                AppPageRoute(
                                   builder: (_) => ScannerScreen(
                                     classroom: r.classroom,
                                     studentName: uid,
@@ -211,21 +212,12 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   }
 
   Widget _emptyState(bool showUpcoming) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.calendar_today_outlined,
-              size: 48, color: AppColors.border),
-          const SizedBox(height: 16),
-          Text(
-            showUpcoming
-                ? 'You have no upcoming reservations yet. Tap \"New reservation\" to book a seat!'
-                : 'No past reservations to show.',
-            style: AppTextStyles.cardSubtitle,
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: Icons.calendar_today_outlined,
+      title: showUpcoming ? 'No upcoming reservations' : 'Nothing here yet',
+      subtitle: showUpcoming
+          ? 'Tap "New reservation" to book a seat!'
+          : 'No past reservations to show.',
     );
   }
 

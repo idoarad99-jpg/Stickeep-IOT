@@ -109,7 +109,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
 
                 if (!snapshot.hasData ||
                     snapshot.data!.snapshot.value == null) {
-                  return const Center(
+                  return Center(
                     child: Text('This student has no reservations yet.',
                         style: AppTextStyles.cardSubtitle),
                   );
@@ -146,7 +146,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
                   });
 
                 if (filtered.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text('No reservations match the selected filters. Try adjusting the filters above.',
                         style: AppTextStyles.cardSubtitle),
                   );

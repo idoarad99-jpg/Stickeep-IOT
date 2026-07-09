@@ -154,7 +154,7 @@ class _ReportScreenState extends State<ReportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Issue type', style: AppTextStyles.label),
+            Text('Issue type', style: AppTextStyles.label),
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
@@ -167,7 +167,7 @@ class _ReportScreenState extends State<ReportScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.redLight : Colors.white,
+                      color: selected ? AppColors.redLight : AppColors.surface,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: selected ? AppColors.red : AppColors.border,
@@ -187,12 +187,12 @@ class _ReportScreenState extends State<ReportScreen> {
             ),
             const SizedBox(height: 20),
 
-            const Text('Location (optional)', style: AppTextStyles.label),
+            Text('Location (optional)', style: AppTextStyles.label),
             const SizedBox(height: 8),
 
             // Building picker
             if (_buildings.isNotEmpty) ...[
-              const Text('Building',
+              Text('Building',
                   style: TextStyle(
                       fontSize: 11, color: AppColors.textSecondary)),
               const SizedBox(height: 6),
@@ -212,7 +212,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.blueLight : Colors.white,
+                        color: selected ? AppColors.blueLight : AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: selected
@@ -237,7 +237,7 @@ class _ReportScreenState extends State<ReportScreen> {
             // Room picker
             if (_selectedBuilding != null &&
                 _roomsInBuilding.isNotEmpty) ...[
-              const Text('Room',
+              Text('Room',
                   style: TextStyle(
                       fontSize: 11, color: AppColors.textSecondary)),
               const SizedBox(height: 6),
@@ -259,7 +259,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.blueLight : Colors.white,
+                        color: selected ? AppColors.blueLight : AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: selected
@@ -284,7 +284,7 @@ class _ReportScreenState extends State<ReportScreen> {
             // Seat picker
             if (_selectedClassroomId != null &&
                 _seatsInRoom.isNotEmpty) ...[
-              const Text('Seat',
+              Text('Seat',
                   style: TextStyle(
                       fontSize: 11, color: AppColors.textSecondary)),
               const SizedBox(height: 6),
@@ -301,7 +301,7 @@ class _ReportScreenState extends State<ReportScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.blueLight : Colors.white,
+                        color: selected ? AppColors.blueLight : AppColors.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: selected
@@ -325,7 +325,7 @@ class _ReportScreenState extends State<ReportScreen> {
             ],
 
             const SizedBox(height: 8),
-            const Text('Description (optional)', style: AppTextStyles.label),
+            Text('Description (optional)', style: AppTextStyles.label),
             const SizedBox(height: 8),
             TextField(
               controller: _descController,

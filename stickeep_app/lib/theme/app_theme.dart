@@ -1,138 +1,301 @@
 import 'package:flutter/material.dart';
 
+/// Semantic colors used directly by screens (outside the Theme mechanism).
+/// Values are getters driven by [ThemeController] so plain widgets like
+/// `Container(color: AppColors.gray)` adapt to light/dark without needing
+/// a BuildContext at every call site.
 class AppColors {
+  static bool _isDark = false;
+  static bool get isDark => _isDark;
+  static void setDark(bool value) => _isDark = value;
+
   // Primary
-  static const blue = Color(0xFF185FA5);
-  static const blueLight = Color(0xFFE6F1FB);
+  static Color get blue => _isDark ? const Color(0xFF5B9BD9) : const Color(0xFF185FA5);
+  static Color get blueLight => _isDark ? const Color(0xFF17324B) : const Color(0xFFE6F1FB);
 
   // Status
-  static const green = Color(0xFF3B6D11);
-  static const greenLight = Color(0xFFEAF3DE);
-  static const red = Color(0xFFA32D2D);
-  static const redLight = Color(0xFFFCEBEB);
-  static const amber = Color(0xFF854F0B);
-  static const amberLight = Color(0xFFFAEEDA);
+  static Color get green => _isDark ? const Color(0xFF8BC34A) : const Color(0xFF3B6D11);
+  static Color get greenLight => _isDark ? const Color(0xFF203015) : const Color(0xFFEAF3DE);
+  static Color get red => _isDark ? const Color(0xFFEF9A9A) : const Color(0xFFA32D2D);
+  static Color get redLight => _isDark ? const Color(0xFF3D2020) : const Color(0xFFFCEBEB);
+  static Color get amber => _isDark ? const Color(0xFFFFB74D) : const Color(0xFF854F0B);
+  static Color get amberLight => _isDark ? const Color(0xFF3D2E14) : const Color(0xFFFAEEDA);
 
   // Admin
-  static const purple = Color(0xFF3C3489);
-  static const purpleLight = Color(0xFFEEEDFE);
+  static Color get purple => _isDark ? const Color(0xFFA48CE0) : const Color(0xFF3C3489);
+  static Color get purpleLight => _isDark ? const Color(0xFF261F4D) : const Color(0xFFEEEDFE);
 
   // Neutral
-  static const gray = Color(0xFFF5F5F5);
-  static const border = Color(0xFFE0E0E0);
-  static const textPrimary = Color(0xFF1A1A1A);
-  static const textSecondary = Color(0xFF6B7280);
+  static Color get gray => _isDark ? const Color(0xFF242424) : const Color(0xFFF5F5F5);
+  static Color get border => _isDark ? const Color(0xFF383838) : const Color(0xFFE0E0E0);
+  static Color get textPrimary => _isDark ? const Color(0xFFF2F2F2) : const Color(0xFF1A1A1A);
+  static Color get textSecondary => _isDark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280);
+
+  // Card/sheet background — use instead of a literal Colors.white so cards
+  // adapt in dark mode.
+  static Color get surface => _isDark ? const Color(0xFF1E1E1E) : Colors.white;
+  static Color get scaffoldBg => _isDark ? const Color(0xFF121212) : const Color(0xFFF0F4F8);
+
+  /// Soft drop shadow for cards — subtler in dark mode where contrast
+  /// already comes from the surface/background split.
+  static List<BoxShadow> get cardShadow => [
+        BoxShadow(
+          color: _isDark ? Colors.black.withOpacity(0.35) : const Color(0x14185FA5),
+          blurRadius: 16,
+          offset: const Offset(0, 6),
+        ),
+      ];
 }
 
 class AppTheme {
-  static ThemeData get theme => ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.blue,
-          primary: AppColors.blue,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF0F4F8),
+  static ThemeData _build({required bool dark}) {
+    final primary = dark ? const Color(0xFF5B9BD9) : const Color(0xFF185FA5);
+    final scaffoldBg = dark ? const Color(0xFF121212) : const Color(0xFFF0F4F8);
+    final surface = dark ? const Color(0xFF1E1E1E) : Colors.white;
+    final fill = dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5);
+    final border = dark ? const Color(0xFF383838) : const Color(0xFFE0E0E0);
+    final textPrimary = dark ? const Color(0xFFF2F2F2) : const Color(0xFF1A1A1A);
+    final textSecondary = dark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280);
+
+    final base = dark ? ThemeData.dark() : ThemeData.light();
+
+    return base.copyWith(
+      brightness: dark ? Brightness.dark : Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primary,
+        brightness: dark ? Brightness.dark : Brightness.light,
+      ),
+      scaffoldBackgroundColor: scaffoldBg,
+      canvasColor: scaffoldBg,
+      cardColor: surface,
+      dividerColor: border,
+      textTheme: base.textTheme.apply(
         fontFamily: 'DM Sans',
-        useMaterial3: true,
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      ),
+      useMaterial3: true,
 
-        // AppBar
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColors.blue,
+      appBarTheme: AppBarTheme(
+        backgroundColor: primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: const TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          fontFamily: 'DM Sans',
+        ),
+      ),
+
+      // כפתורים — גובה מינימלי 50px לנגישות, פינות רכות יותר
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary,
           foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 50),
           elevation: 0,
-          titleTextStyle: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
-
-        // כפתורים — גובה מינימלי 50px לנגישות
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.blue,
-            foregroundColor: Colors.white,
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.textPrimary,
-            minimumSize: const Size(double.infinity, 50),
-            side: const BorderSide(color: AppColors.border),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            textStyle: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-
-        // שדות קלט
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: AppColors.gray,
-          labelStyle: const TextStyle(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(
             fontSize: 14,
-            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'DM Sans',
           ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: AppColors.blue, width: 1.5),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         ),
-      );
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: textPrimary,
+          minimumSize: const Size(double.infinity, 50),
+          side: BorderSide(color: border),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'DM Sans',
+          ),
+        ),
+      ),
+
+      // שדות קלט
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: fill,
+        labelStyle: TextStyle(fontSize: 14, color: textSecondary),
+        hintStyle: TextStyle(fontSize: 14, color: textSecondary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: primary, width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      ),
+
+      dialogTheme: DialogTheme(
+        backgroundColor: surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: dark ? const Color(0xFF2A2A2A) : const Color(0xFF1A1A1A),
+        contentTextStyle: const TextStyle(color: Colors.white, fontFamily: 'DM Sans'),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected) ? primary : null),
+        trackColor: WidgetStateProperty.resolveWith((states) =>
+            states.contains(WidgetState.selected) ? primary.withOpacity(0.4) : null),
+      ),
+    );
+  }
+
+  static ThemeData get theme => _build(dark: false);
+  static ThemeData get darkTheme => _build(dark: true);
 }
 
 // סגנונות טקסט לשימוש חוזר
 class AppTextStyles {
-  static const sectionTitle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle get sectionTitle => TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+      );
 
-  static const cardTitle = TextStyle(
-    fontSize: 15,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get cardTitle => TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      );
 
-  static const cardSubtitle = TextStyle(
-    fontSize: 13,
-    color: AppColors.textSecondary,
-  );
+  static TextStyle get cardSubtitle => TextStyle(
+        fontSize: 13,
+        color: AppColors.textSecondary,
+      );
 
-  static const label = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
-    fontWeight: FontWeight.w500,
-  );
+  static TextStyle get label => TextStyle(
+        fontSize: 12,
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w500,
+      );
 
-  static const value = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textPrimary,
-  );
+  static TextStyle get value => TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textPrimary,
+      );
+}
+
+/// A soft, elevated card used across the app instead of a plain bordered
+/// Container, for the "soft & modern" visual direction.
+class AppCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
+
+  const AppCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final card = Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppColors.cardShadow,
+      ),
+      child: child,
+    );
+
+    if (onTap == null) return card;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: card,
+      ),
+    );
+  }
+}
+
+/// Consistent empty-state placeholder: icon in a soft circle, title, and
+/// an optional subtitle/action.
+class EmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Widget? action;
+
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.blueLight,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 32, color: AppColors.blue),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.cardSubtitle,
+              ),
+            ],
+            if (action != null) ...[
+              const SizedBox(height: 16),
+              action!,
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // Widget עזר לתגיות סטטוס (free / reserved / occupied)
@@ -148,19 +311,19 @@ class StatusTag extends StatelessWidget {
     required this.textColor,
   });
 
-  factory StatusTag.free() => const StatusTag(
+  factory StatusTag.free() => StatusTag(
         label: 'Free',
         backgroundColor: AppColors.greenLight,
         textColor: AppColors.green,
       );
 
-  factory StatusTag.occupied() => const StatusTag(
+  factory StatusTag.occupied() => StatusTag(
         label: 'Occupied',
         backgroundColor: AppColors.redLight,
         textColor: AppColors.red,
       );
 
-  factory StatusTag.reserved() => const StatusTag(
+  factory StatusTag.reserved() => StatusTag(
         label: 'Reserved',
         backgroundColor: AppColors.amberLight,
         textColor: AppColors.amber,
@@ -172,7 +335,7 @@ class StatusTag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,

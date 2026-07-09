@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class ScannerScreen extends StatefulWidget {
   final String classroom;
@@ -183,7 +184,7 @@ class _ScannerScreenState extends State<ScannerScreen>
           icon: const Icon(Icons.home_outlined),
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
+            AppPageRoute(
                 builder: (_) =>
                     const HomeScreen(userName: '', userRole: '')),
             (route) => false,
@@ -217,7 +218,7 @@ class _ScannerScreenState extends State<ScannerScreen>
                     ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'How to scan:',
               style: TextStyle(
                 fontSize: 12,
@@ -319,13 +320,13 @@ class _ScannerBox extends StatelessWidget {
                 if (!cameraReady)
                   Container(
                     color: const Color(0xFF1A1A1A),
-                    child: const Center(
+                    child: Center(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           CircularProgressIndicator(color: AppColors.blue),
-                          SizedBox(height: 12),
-                          Text('Starting camera…',
+                          const SizedBox(height: 12),
+                          const Text('Starting camera…',
                               style: TextStyle(
                                   color: Colors.white70, fontSize: 12)),
                         ],
@@ -381,7 +382,7 @@ class _Corner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const side = BorderSide(color: AppColors.blue, width: 2);
+    final side = BorderSide(color: AppColors.blue, width: 2);
     const none = BorderSide.none;
     return Positioned(
       top: top, left: left, right: right, bottom: bottom,
@@ -435,7 +436,7 @@ class _SuccessBox extends StatelessWidget {
                 style: TextStyle(fontSize: 40)),
           ),
           const SizedBox(height: 8),
-          const Text('Arrival confirmed!',
+          Text('Arrival confirmed!',
               textAlign: TextAlign.center,
               style: TextStyle(
                   fontSize: 14,
@@ -466,7 +467,7 @@ class _StepRow extends StatelessWidget {
         children: [
           Container(
             width: 20, height: 20,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
                 color: AppColors.blue, shape: BoxShape.circle),
             alignment: Alignment.center,
             child: Text('$number',
@@ -480,7 +481,7 @@ class _StepRow extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.only(top: 3),
               child: Text(text,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 11, color: AppColors.textSecondary)),
             ),
           ),

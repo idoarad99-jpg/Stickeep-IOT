@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/user_reservations_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/page_route.dart';
 
 class UserSearchScreen extends StatefulWidget {
   const UserSearchScreen({super.key});
@@ -23,7 +24,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         backgroundColor: AppColors.purple,
         title: const Text('Search users'),
@@ -39,10 +40,10 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                 hintText: 'Search by name or student ID',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surface,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.border),
+                  borderSide: BorderSide(color: AppColors.border),
                 ),
               ),
             ),
@@ -59,7 +60,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text('No users found',
                         style: AppTextStyles.cardSubtitle),
                   );
@@ -76,7 +77,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                 }).toList();
 
                 if (docs.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text('No matching users',
                         style: AppTextStyles.cardSubtitle),
                   );
@@ -96,16 +97,16 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       child: ListTile(
-                        tileColor: Colors.white,
+                        tileColor: AppColors.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
-                          side: const BorderSide(color: AppColors.border),
+                          side: BorderSide(color: AppColors.border),
                         ),
                         leading: CircleAvatar(
                           backgroundColor: AppColors.purpleLight,
                           child: Text(
                             name.isNotEmpty ? name[0].toUpperCase() : '?',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppColors.purple,
                               fontWeight: FontWeight.w600,
                             ),
@@ -119,7 +120,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                           style: AppTextStyles.label,
                         ),
                         trailing: role == 'admin'
-                            ? const StatusTag(
+                            ? StatusTag(
                                 label: 'Admin',
                                 backgroundColor: AppColors.purpleLight,
                                 textColor: AppColors.purple,
@@ -127,7 +128,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                             : null,
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
+                          AppPageRoute(
                             builder: (_) => UserReservationsScreen(
                               uid: doc.id,
                               userName: name,
