@@ -7,6 +7,7 @@ import 'package:stickeep_app/screens/admin/reports_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/admin/user_search_screen.dart';
 import 'package:stickeep_app/screens/admin/manage_classrooms_screen.dart';
+
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
@@ -16,7 +17,6 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final _firestore = FirebaseFirestore.instance;
-
   static const _isAdmin = true;
 
   @override
@@ -40,10 +40,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       backgroundColor: const Color(0xFFF0F4F8),
       appBar: AppBar(
         backgroundColor: const Color(0xFF3C3489),
-        title: const Text(
-          'Admin Panel',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Admin Panel', style: TextStyle(color: Colors.white)),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 12),
@@ -52,19 +49,15 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               color: Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Text(
-              'Admin',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: const Text('Admin',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600)),
           ),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // students/ is the source of truth for approved users
         stream: _firestore.collection('students').snapshots(),
         builder: (context, studentsSnap) {
           final totalUsers = studentsSnap.data?.docs.length ?? 0;
@@ -76,221 +69,178 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 .snapshots(),
             builder: (context, pendingSnap) {
               final pendingCount = pendingSnap.data?.docs.length ?? 0;
+
               return StreamBuilder<DatabaseEvent>(
                 stream: FirebaseDatabase.instance.ref('reports').onValue,
                 builder: (context, reportsSnap) {
                   int reportsCount = 0;
-                  if (reportsSnap.hasData && reportsSnap.data!.snapshot.value != null) {
-                    final raw = reportsSnap.data!.snapshot.value as Map<dynamic, dynamic>;
-                    reportsCount = raw.values.where((v) =>
-                      (v as Map<dynamic, dynamic>)['status'] as String? == 'open'
-                    ).length;
+                  if (reportsSnap.hasData &&
+                      reportsSnap.data!.snapshot.value != null) {
+                    final raw = reportsSnap.data!.snapshot.value
+                        as Map<dynamic, dynamic>;
+                    reportsCount = raw.values.where((v) {
+                      final map = v as Map<dynamic, dynamic>;
+                      return (map['status'] as String?) == 'open';
+                    }).length;
                   }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── Metric cards ─────────────────────────────────────────────
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MetricCard(
-                        label: 'Users',
-                        value: totalUsers.toString(),
-                        valueColor: const Color(0xFF185FA5),
-                      ),
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _MetricCard(
+                                label: 'Users',
+                                value: totalUsers.toString(),
+                                valueColor: const Color(0xFF185FA5),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MetricCard(
+                                label: 'Pending',
+                                value: pendingCount.toString(),
+                                valueColor: const Color(0xFF854F0B),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _MetricCard(
+                                label: 'Reports',
+                                value: reportsCount.toString(),
+                                valueColor: const Color(0xFFA32D2D),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('Quick actions',
+                            style: TextStyle(
+                                fontSize: 9,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const PendingUsersScreen())),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3C3489),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              textStyle: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w500),
+                            ),
+                            child: Text(
+                                '👤  Review pending users ($pendingCount)'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(
+                                    builder: (_) => const AllUsersScreen())),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(
+                                  color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              textStyle: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w500),
+                            ),
+                            child: const Text('👥  Manage all users'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const UserSearchScreen())),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(
+                                  color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              textStyle: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w500),
+                            ),
+                            child: const Text('🔍  Search users'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(
+                                    builder: (_) => const ReportsScreen())),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(
+                                  color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              textStyle: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w500),
+                            ),
+                            child:
+                                Text('⚠️  View reports ($reportsCount)'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.push(context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        const ManageClassroomsScreen())),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(
+                                  color: Color(0xFFE0E0E0)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8)),
+                              textStyle: const TextStyle(
+                                  fontSize: 10, fontWeight: FontWeight.w500),
+                            ),
+                            child: const Text('🏫  Manage classrooms'),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text('Sticker monitor',
+                            style: TextStyle(
+                                fontSize: 9,
+                                color: Color(0xFF6B7280),
+                                fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 8),
+                        const _StickerMonitor(),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _MetricCard(
-                        label: 'Pending',
-                        value: pendingCount.toString(),
-                        valueColor: const Color(0xFF854F0B),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _MetricCard(
-                        label: 'Reports',
-                        value: reportsCount.toString(),
-                        valueColor: const Color(0xFFA32D2D),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // ── Quick actions ─────────────────────────────────────────────
-                const Text(
-                  'Quick actions',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Color(0xFF6B7280),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Purple filled — Review pending users
-                SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const PendingUsersScreen()),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3C3489),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: Text('👤  Review pending users ($pendingCount)'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Outlined — Manage all users
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const AllUsersScreen()),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('👥  Manage all users'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Outlined — Search users
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const UserSearchScreen()),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('🔍  Search users'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Outlined — View reports
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ReportsScreen()),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('⚠️  View reports ($reportsCount)'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Outlined — Manage classrooms
-                SizedBox(
-                  height: 36,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const ManageClassroomsScreen()),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textPrimary,
-                      side: const BorderSide(color: Color(0xFFE0E0E0)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    child: const Text('🏫  Manage classrooms'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ── Sticker monitor ───────────────────────────────────────────
-                const Text(
-                  'Sticker monitor',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: Color(0xFF6B7280),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const _StickerMonitor(),
-              ],
-            ),
-          );
-        },
+                  );
+                },
+              );
+            },
           );
         },
       ),
     );
   }
 }
-
-// ── Metric Card ───────────────────────────────────────────────────────────────
 
 class _MetricCard extends StatelessWidget {
   final String label;
@@ -314,29 +264,20 @@ class _MetricCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: valueColor,
-              height: 1.1,
-            ),
-          ),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 7,
-              color: Color(0xFF6B7280),
-            ),
-          ),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: valueColor,
+                  height: 1.1)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 7, color: Color(0xFF6B7280))),
         ],
       ),
     );
   }
 }
-
-// ── Sticker Monitor ───────────────────────────────────────────────────────────
 
 class _StickerMonitor extends StatelessWidget {
   const _StickerMonitor();
@@ -365,17 +306,18 @@ class _StickerMonitor extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: const Center(
-              child: Text(
-                'No sticker data yet',
-                style: TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
-              ),
+              child: Text('No sticker data yet',
+                  style:
+                      TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
             ),
           );
         }
 
-        final raw = snap.data!.snapshot.value as Map<dynamic, dynamic>;
+        final raw =
+            snap.data!.snapshot.value as Map<dynamic, dynamic>;
         final entries = raw.entries.toList()
-          ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
+          ..sort(
+              (a, b) => a.key.toString().compareTo(b.key.toString()));
 
         return Container(
           decoration: BoxDecoration(
@@ -385,21 +327,22 @@ class _StickerMonitor extends StatelessWidget {
           child: Column(
             children: entries.map((entry) {
               final seatId = entry.key.toString();
-              final data =
-                  entry.value is Map ? entry.value as Map<dynamic, dynamic> : {};
+              final data = entry.value is Map
+                  ? entry.value as Map<dynamic, dynamic>
+                  : {};
 
-              final battery = (data['batteryPercentage'] as num?)?.toInt();
+              final battery =
+                  (data['batteryPercentage'] as num?)?.toInt();
               final lastSeenMs = (data['lastSeen'] as num?)?.toInt();
 
               final bool isOnline = lastSeenMs != null &&
                   DateTime.now()
-                          .difference(
-                              DateTime.fromMillisecondsSinceEpoch(lastSeenMs))
-                          .inMinutes <
-                      5;
+                      .difference(DateTime.fromMillisecondsSinceEpoch(lastSeenMs))
+                      .inMinutes < 5;
 
-              final lastSeenText =
-                  lastSeenMs != null ? _formatLastSeen(lastSeenMs) : 'Never';
+              final lastSeenText = lastSeenMs != null
+                  ? _formatLastSeen(lastSeenMs)
+                  : 'Never';
 
               Color batteryColor;
               String batteryText;
@@ -418,8 +361,8 @@ class _StickerMonitor extends StatelessWidget {
               }
 
               return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
                 child: Row(
                   children: [
                     Container(
@@ -434,29 +377,21 @@ class _StickerMonitor extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        seatId,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
+                      child: Text(seatId,
+                          style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1A1A))),
                     ),
-                    Text(
-                      '🔋 $batteryText',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w500,
-                        color: batteryColor,
-                      ),
-                    ),
+                    Text('🔋 $batteryText',
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w500,
+                            color: batteryColor)),
                     const SizedBox(width: 8),
-                    Text(
-                      '🕐 $lastSeenText',
-                      style: const TextStyle(
-                          fontSize: 9, color: Color(0xFF6B7280)),
-                    ),
+                    Text('🕐 $lastSeenText',
+                        style: const TextStyle(
+                            fontSize: 9, color: Color(0xFF6B7280))),
                   ],
                 ),
               );
