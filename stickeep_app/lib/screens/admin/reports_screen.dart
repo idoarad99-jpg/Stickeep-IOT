@@ -16,7 +16,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _toggleStatus(String key, String currentStatus) async {
     final newStatus = currentStatus == 'open' ? 'resolved' : 'open';
     await FirebaseDatabase.instance
-        .ref('reports/\$key')
+        .ref('reports/$key')
         .update({'status': newStatus});
   }
 
