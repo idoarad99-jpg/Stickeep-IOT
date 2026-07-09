@@ -151,6 +151,12 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const BookingStepIndicator(
+              step: 1,
+              totalSteps: 3,
+              label: 'Classroom & time',
+            ),
+            const SizedBox(height: 20),
             // ── Classroom ──────────────────────────────────────────────────
             Text('Classroom', style: AppTextStyles.label),
             const SizedBox(height: 8),

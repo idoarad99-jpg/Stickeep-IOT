@@ -139,7 +139,12 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 8),
+            const BookingStepIndicator(
+              step: 3,
+              totalSteps: 3,
+              label: 'Confirm',
+            ),
+            const SizedBox(height: 24),
             Center(
               child: Container(
                 width: 44,
@@ -205,7 +210,7 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
             const SizedBox(height: 12),
             OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Edit — back to step 4'),
+              child: const Text('Edit — back to seat selection'),
             ),
           ],
         ),

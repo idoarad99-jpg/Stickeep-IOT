@@ -317,6 +317,67 @@ class EmptyState extends StatelessWidget {
   }
 }
 
+/// Progress indicator for the multi-screen booking flow
+/// (classroom -> seat -> confirm). Shows "Step X of N" plus a dotted track.
+class BookingStepIndicator extends StatelessWidget {
+  final int step;
+  final int totalSteps;
+  final String label;
+
+  const BookingStepIndicator({
+    super.key,
+    required this.step,
+    required this.totalSteps,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            Text(
+              'Step $step of $totalSteps',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.blue,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: List.generate(totalSteps, (i) {
+            final done = i < step;
+            return Expanded(
+              child: Container(
+                height: 4,
+                margin: EdgeInsets.only(right: i == totalSteps - 1 ? 0 : 6),
+                decoration: BoxDecoration(
+                  color: done ? AppColors.blue : AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+}
+
 // Widget עזר לתגיות סטטוס (free / reserved / occupied)
 // Carries an icon alongside color+text so status is never conveyed by
 // color alone (important for colorblind users).

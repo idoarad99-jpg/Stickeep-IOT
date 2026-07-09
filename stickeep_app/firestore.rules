@@ -1,0 +1,78 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/students/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // students/{uid} — profile + role. Created by the app on approval
+    // (admin-initiated) and read by the owner on login to resolve role.
+    match /students/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // registrationRequests/{uid} — created by the (already auth'd, not-yet-
+    // approved) user during signup; only admins triage/approve/reject.
+    match /registrationRequests/{uid} {
+      allow create: if isOwner(uid);
+      allow read: if isOwner(uid) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // classrooms/{id} (+ seats subcollection) — any signed-in user can browse
+    // for booking; only admins manage the catalog.
+    match /classrooms/{classroomId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+
+      match /seats/{seatId} {
+        allow read: if isSignedIn();
+        allow write: if isAdmin();
+      }
+    }
+
+    // seats/{seatId} — live seat status doc, written by whoever is booking/
+    // cancelling/scanning (always the signed-in student acting on their own
+    // reservation) as well as admins managing seats.
+    match /seats/{seatId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+
+      match /reservations/{resId} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn() &&
+          request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isAdmin() ||
+          (isSignedIn() && resource.data.userId == request.auth.uid);
+      }
+    }
+
+    // reservations/{id} — the canonical reservation record.
+    match /reservations/{resId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAdmin() ||
+        (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // graveyard/{id} — append-only cancellation archive. Any signed-in user
+    // can archive their own cancellation; only admins can read/manage it.
+    match /graveyard/{docId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}

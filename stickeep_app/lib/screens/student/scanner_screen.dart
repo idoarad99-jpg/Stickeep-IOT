@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -94,9 +95,9 @@ class _ScannerScreenState extends State<ScannerScreen>
       _confirmArrival();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("QR code doesn't match. Please try again."),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text("QR code doesn't match. Please try again."),
+          backgroundColor: AppColors.red,
         ),
       );
     }
@@ -112,18 +113,19 @@ class _ScannerScreenState extends State<ScannerScreen>
           .doc(widget.reservationId);
       await docRef.update({'status': 'arrived'});
 
-      // Update RTDB qr_status
-      final rtdbRef = FirebaseDatabase.instance.ref('reservations');
-      final snapshot = await rtdbRef.get();
-      if (snapshot.exists) {
-        final allUsers = snapshot.value as Map<dynamic, dynamic>;
-        for (final userEntry in allUsers.entries) {
-          final userReservations = userEntry.value as Map<dynamic, dynamic>;
+      // Update RTDB qr_status — scoped to the signed-in user's own
+      // reservations, since arrival is always confirmed by the reservation
+      // owner scanning their own sticker.
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid != null) {
+        final userRef = FirebaseDatabase.instance.ref('reservations/$uid');
+        final snapshot = await userRef.get();
+        if (snapshot.exists) {
+          final userReservations = snapshot.value as Map<dynamic, dynamic>;
           for (final resEntry in userReservations.entries) {
             final resData = resEntry.value as Map<dynamic, dynamic>;
             if ((resData['qr_token'] as String? ?? '') == widget.reservationId) {
-              await rtdbRef
-                  .child(userEntry.key as String)
+              await userRef
                   .child(resEntry.key as String)
                   .update({'qr_status': 'arrived'});
               break;
@@ -136,16 +138,11 @@ class _ScannerScreenState extends State<ScannerScreen>
       final doc = await docRef.get();
       if (doc.exists) {
         final data = doc.data()!;
-        final seatNumber = data['seatNumber'];
-        if (seatNumber != null) {
-          final classroomKey =
-              widget.classroom.replaceAll(' ', '_').toLowerCase();
-          await FirebaseDatabase.instance
-              .ref('classrooms/$classroomKey/seats/seat_$seatNumber')
-              .update({'status': 'occupied'});
-        }
         final seatId = data['seatId'] as String?;
         if (seatId != null && seatId.isNotEmpty) {
+          await FirebaseDatabase.instance
+              .ref('seats/$seatId')
+              .update({'status': 'occupied'});
           final seatDocRef =
               FirebaseFirestore.instance.collection('seats').doc(seatId);
           await seatDocRef.update({
@@ -178,7 +175,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.home_outlined),
@@ -218,16 +215,23 @@ class _ScannerScreenState extends State<ScannerScreen>
                     ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'How to scan:',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
+            AppCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'How to scan:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ..._steps.map((s) => _StepRow(number: s.$1, text: s.$2)),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            ..._steps.map((s) => _StepRow(number: s.$1, text: s.$2)),
           ],
         ),
       ),

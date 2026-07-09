@@ -193,6 +193,14 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
 
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: BookingStepIndicator(
+                  step: 2,
+                  totalSteps: 3,
+                  label: 'Pick a seat',
+                ),
+              ),
               // ── Legend ──────────────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
