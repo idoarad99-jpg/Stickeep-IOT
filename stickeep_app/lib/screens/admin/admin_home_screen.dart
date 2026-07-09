@@ -76,7 +76,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 .snapshots(),
             builder: (context, pendingSnap) {
               final pendingCount = pendingSnap.data?.docs.length ?? 0;
-              const reportsCount = 0;
+              return StreamBuilder<DatabaseEvent>(
+                stream: FirebaseDatabase.instance.ref('reports').onValue,
+                builder: (context, reportsSnap) {
+                  int reportsCount = 0;
+                  if (reportsSnap.hasData && reportsSnap.data!.snapshot.value != null) {
+                    final raw = reportsSnap.data!.snapshot.value as Map<dynamic, dynamic>;
+                    reportsCount = raw.values.where((v) =>
+                      (v as Map<dynamic, dynamic>)['status'] as String? == 'open'
+                    ).length;
+                  }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(12),

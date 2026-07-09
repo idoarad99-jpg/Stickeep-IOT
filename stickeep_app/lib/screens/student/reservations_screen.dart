@@ -108,6 +108,11 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                   }).toList();
                 }
 
+                // Auto-expire no-shows (30 min grace period)
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _autoExpireNoShows(uid, all);
+                });
+
                 reservations.sort((a, b) {
                   // Sort ascending by date+time: nearest first
                   final aKey = a.date.split('.').reversed.join() +
@@ -222,6 +227,36 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _autoExpireNoShows(String uid, List<Reservation> reservations) async {
+    final now = DateTime.now();
+    final graceMinutes = 30;
+
+    for (final r in reservations) {
+      if (!r.isUpcoming) continue;
+      if (r.qrStatus == 'arrived' || r.nfcStatus == 'approved') continue;
+
+      // Parse date (dd.MM.yyyy) + time_start (HH:mm)
+      final dateParts = r.date.split('.');
+      if (dateParts.length != 3) continue;
+      final timeParts = r.timeStart.split(':');
+      if (timeParts.length != 2) continue;
+
+      final startTime = DateTime(
+        int.parse(dateParts[2]),
+        int.parse(dateParts[1]),
+        int.parse(dateParts[0]),
+        int.parse(timeParts[0]),
+        int.parse(timeParts[1]),
+      );
+
+      final deadline = startTime.add(Duration(minutes: graceMinutes));
+      if (now.isAfter(deadline)) {
+        // Auto-cancel: no show
+        await cancelReservation(uid: uid, r: r);
+      }
+    }
   }
 
   Future<void> _cancelReservation(

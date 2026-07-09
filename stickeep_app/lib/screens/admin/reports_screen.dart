@@ -2,13 +2,21 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
-class ReportsScreen extends StatelessWidget {
+class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
+
+  @override
+  State<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  bool _showOpen = true;
+  bool _showResolved = true;
 
   Future<void> _toggleStatus(String key, String currentStatus) async {
     final newStatus = currentStatus == 'open' ? 'resolved' : 'open';
     await FirebaseDatabase.instance
-        .ref('reports/$key')
+        .ref('reports/\$key')
         .update({'status': newStatus});
   }
 
@@ -22,7 +30,32 @@ class ReportsScreen extends StatelessWidget {
         backgroundColor: AppColors.purple,
         title: const Text('Reports'),
       ),
-      body: StreamBuilder<DatabaseEvent>(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Wrap(
+              spacing: 8,
+              children: [
+                FilterChip(
+                  label: const Text('Open'),
+                  selected: _showOpen,
+                  onSelected: (val) => setState(() => _showOpen = val),
+                  selectedColor: AppColors.redLight,
+                  checkmarkColor: AppColors.red,
+                ),
+                FilterChip(
+                  label: const Text('Resolved'),
+                  selected: _showResolved,
+                  onSelected: (val) => setState(() => _showResolved = val),
+                  selectedColor: AppColors.greenLight,
+                  checkmarkColor: AppColors.green,
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<DatabaseEvent>(
         stream: ref.onValue,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -45,7 +78,7 @@ class ReportsScreen extends StatelessWidget {
 
           final raw =
               snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-          final reports = raw.entries.toList()
+          final allReports = raw.entries.toList()
             ..sort((a, b) {
               final aDate =
                   (a.value as Map)['created_at'] as String? ?? '';
@@ -53,6 +86,20 @@ class ReportsScreen extends StatelessWidget {
                   (b.value as Map)['created_at'] as String? ?? '';
               return bDate.compareTo(aDate);
             });
+
+          final reports = allReports.where((e) {
+            final status = (e.value as Map)['status'] as String? ?? 'open';
+            if (status == 'open') return _showOpen;
+            if (status == 'resolved') return _showResolved;
+            return true;
+          }).toList();
+
+          if (reports.isEmpty) {
+            return const Center(
+              child: Text('No reports match the filters',
+                  style: AppTextStyles.cardSubtitle),
+            );
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
@@ -203,6 +250,9 @@ class ReportsScreen extends StatelessWidget {
             },
           );
         },
+      ),
+          ),
+        ],
       ),
     );
   }
