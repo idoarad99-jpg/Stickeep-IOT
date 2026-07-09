@@ -135,6 +135,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         ? AppColors.green.withOpacity(0.3)
                         : AppColors.border,
                   ),
+                  boxShadow: AppColors.cardShadow,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

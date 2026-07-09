@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:stickeep_app/theme/app_theme.dart';
 
 class PendingUsersScreen extends StatefulWidget {
   const PendingUsersScreen({super.key});
@@ -32,10 +33,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✓ User approved!'),
-          backgroundColor: Color(0xFF3B6D11),
-        ),
+        const SnackBar(content: Text('✓ User approved!')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -55,10 +53,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User rejected'),
-          backgroundColor: Color(0xFFA32D2D),
-        ),
+        const SnackBar(content: Text('User rejected')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -72,14 +67,10 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF3C3489),
-        title: const Text(
-          'Pending users',
-          style: TextStyle(color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: AppColors.purple,
+        title: const Text('Pending users'),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
@@ -99,30 +90,23 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
               // ── "X users waiting" subtitle ────────────────────────────────
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 child: Text(
                   '${docs.length} user${docs.length == 1 ? '' : 's'} waiting for approval',
-                  style: const TextStyle(
-                    fontSize: 8,
-                    color: Color(0xFF6B7280),
-                  ),
+                  style: AppTextStyles.cardSubtitle,
                 ),
               ),
 
               // ── List / empty state ────────────────────────────────────────
               Expanded(
                 child: docs.isEmpty
-                    ? const Center(
-                        child: Text(
-                          'No pending requests 🎉',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6B7280),
-                          ),
-                        ),
+                    ? const EmptyState(
+                        icon: Icons.check_circle_outline,
+                        title: 'No pending requests',
+                        subtitle: 'You\'re all caught up! 🎉',
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         itemCount: docs.length,
                         itemBuilder: (context, index) {
                           final doc = docs[index];
@@ -165,137 +149,113 @@ class _PendingCard extends StatelessWidget {
     final studentNumber = data['studentNumber'] as String? ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          // ── Top row: avatar · name/number · Pending tag ───────────────────
-          Row(
-            children: [
-              // Purple avatar circle
-              Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEEEDFE),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    initial,
-                    style: const TextStyle(
-                      color: Color(0xFF3C3489),
-                      fontSize: 8,
-                      fontWeight: FontWeight.w600,
-                    ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            // ── Top row: avatar · name/number · Pending tag ───────────────────
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.purpleLight,
+                    shape: BoxShape.circle,
                   ),
-                ),
-              ),
-              const SizedBox(width: 8),
-
-              // Name + student number
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 9,
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: TextStyle(
+                        color: AppColors.purple,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      studentNumber,
-                      style: const TextStyle(
-                        fontSize: 8,
-                        color: Color(0xFF6B7280),
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Amber "Pending" tag
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFAEEDA),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  'Pending',
-                  style: TextStyle(
-                    fontSize: 7,
-                    color: Color(0xFF854F0B),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
+                const SizedBox(width: 12),
 
-          // ── Bottom row: Approve + Reject buttons ──────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => onApprove(docId, data),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEAF3DE),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '✓ Approve',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: Color(0xFF3B6D11),
-                          fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: AppTextStyles.cardTitle,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(studentNumber, style: AppTextStyles.cardSubtitle),
+                    ],
+                  ),
+                ),
+
+                StatusTag(
+                  label: 'Pending',
+                  backgroundColor: AppColors.amberLight,
+                  textColor: AppColors.amber,
+                  icon: Icons.schedule,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // ── Bottom row: Approve + Reject buttons ──────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onApprove(docId, data),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.greenLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '✓ Approve',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.green,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => onReject(docId),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFCEBEB),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '✕ Reject',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: Color(0xFFA32D2D),
-                          fontWeight: FontWeight.w500,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => onReject(docId),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.redLight,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '✕ Reject',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

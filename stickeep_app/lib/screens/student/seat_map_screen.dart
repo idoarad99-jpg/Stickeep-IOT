@@ -255,19 +255,40 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                           _selectedSeatId =
                                               isSelected ? null : seat.seatId;
                                         }),
-                                child: Container(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  curve: Curves.easeOut,
                                   margin: const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
                                     color: bg,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                         color: border, width: isSelected ? 2 : 1),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: AppColors.blue.withOpacity(0.25),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ]
+                                        : null,
                                   ),
                                   child: Row(
                                     children: [
-                                      const Text('♿', style: TextStyle(fontSize: 24)),
-                                      const SizedBox(width: 16),
+                                      Container(
+                                        width: 44,
+                                        height: 44,
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.surface,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(Icons.accessible,
+                                            color: textColor, size: 26),
+                                      ),
+                                      const SizedBox(width: 14),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
@@ -302,6 +323,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                           label: 'Selected',
                                           backgroundColor: AppColors.blueLight,
                                           textColor: AppColors.blue,
+                                          icon: Icons.check_circle_outline,
                                         )
                                       else
                                         StatusTag.free(),

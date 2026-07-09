@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:stickeep_app/theme/app_theme.dart';
 
 class AllUsersScreen extends StatefulWidget {
   const AllUsersScreen({super.key});
@@ -34,29 +35,19 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
-          'Delete User',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
+        title: const Text('Delete User'),
         content: Text(
           'Are you sure you want to delete $name? This action cannot be undone.',
-          style: const TextStyle(fontSize: 12),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF6B7280)),
-            ),
+            child: const Text('Cancel'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Color(0xFFA32D2D)),
-            ),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -73,10 +64,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User deleted'),
-          backgroundColor: Color(0xFFA32D2D),
-        ),
+        const SnackBar(content: Text('User deleted')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -91,29 +79,17 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
-          'Make Admin',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        content: Text(
-          'Give admin access to $name?',
-          style: const TextStyle(fontSize: 12),
-        ),
+        title: const Text('Make Admin'),
+        content: Text('Give admin access to $name?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Color(0xFF6B7280)),
-            ),
+            child: const Text('Cancel'),
           ),
           TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.purple),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Confirm',
-              style: TextStyle(color: Color(0xFF3C3489)),
-            ),
+            child: const Text('Confirm'),
           ),
         ],
       ),
@@ -129,10 +105,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('✓ $name is now an admin'),
-          backgroundColor: const Color(0xFF3C3489),
-        ),
+        SnackBar(content: Text('✓ $name is now an admin')),
       );
     } catch (e) {
       if (!mounted) return;
@@ -146,47 +119,22 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4F8),
+      backgroundColor: AppColors.scaffoldBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF3C3489),
-        title: const Text(
-          'All users',
-          style: TextStyle(color: Colors.white),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: AppColors.purple,
+        title: const Text('All users'),
       ),
       body: Column(
         children: [
           // ── Search bar ───────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: const Color(0xFFE0E0E0)),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(fontSize: 9),
-                onChanged: (v) =>
-                    setState(() => _searchQuery = v.toLowerCase()),
-                decoration: const InputDecoration(
-                  hintText: 'Search users...',
-                  hintStyle:
-                      TextStyle(fontSize: 9, color: Color(0xFF6B7280)),
-                  prefixIcon: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 10),
-                    child: Text('🔍', style: TextStyle(fontSize: 12)),
-                  ),
-                  prefixIconConstraints:
-                      BoxConstraints(minWidth: 0, minHeight: 0),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 0, vertical: 9),
-                  filled: false,
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (v) => setState(() => _searchQuery = v.toLowerCase()),
+              decoration: const InputDecoration(
+                hintText: 'Search users...',
+                prefixIcon: Icon(Icons.search),
               ),
             ),
           ),
@@ -197,12 +145,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               stream: _firestore.collection('students').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 var docs = snapshot.data?.docs ?? [];
@@ -220,19 +163,15 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                 }
 
                 if (docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No users found',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
+                  return const EmptyState(
+                    icon: Icons.people_outline,
+                    title: 'No users found',
+                    subtitle: 'Try a different search.',
                   );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final doc = docs[index];
@@ -278,152 +217,111 @@ class _UserCard extends StatelessWidget {
     final isAdmin = role == 'admin';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // ── Avatar ───────────────────────────────────────────────────────
-          Container(
-            width: 36,
-            height: 36,
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEEDFE),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Color(0xFF3C3489),
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: AppCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // ── Avatar ───────────────────────────────────────────────────────
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.purpleLight,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    color: AppColors.purple,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
+            const SizedBox(width: 12),
 
-          // ── Name + student number · reservations ──────────────────────────
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // ── Name + student number ──────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: AppTextStyles.cardTitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    studentNumber,
+                    style: AppTextStyles.cardSubtitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // ── Right column: tags + action buttons ───────────────────────────
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                // Status tag — Active (green) or Suspended (red)
+                StatusTag(
+                  label: isAuthorized ? 'Active' : 'Suspended',
+                  backgroundColor:
+                      isAuthorized ? AppColors.greenLight : AppColors.redLight,
+                  textColor: isAuthorized ? AppColors.green : AppColors.red,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$studentNumber · 0 reservations',
-                  style: const TextStyle(
-                    fontSize: 8,
-                    color: Color(0xFF6B7280),
+                const SizedBox(height: 6),
+
+                // Role: purple Admin tag OR outlined Make Admin button
+                if (isAdmin)
+                  StatusTag(
+                    label: 'Admin',
+                    backgroundColor: AppColors.purpleLight,
+                    textColor: AppColors.purple,
+                  )
+                else
+                  _ActionButton(
+                    label: 'Make Admin',
+                    color: AppColors.purple,
+                    filled: false,
+                    onTap: () => onMakeAdmin(docId, name),
                   ),
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 6),
+
+                // Delete User button (always shown)
+                _ActionButton(
+                  label: 'Delete',
+                  color: AppColors.red,
+                  filled: true,
+                  onTap: () => onDelete(docId, name),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-
-          // ── Right column: tags + action buttons ───────────────────────────
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Status tag — Active (green) or Suspended (red)
-              _Tag(
-                label: isAuthorized ? 'Active' : 'Suspended',
-                background: isAuthorized
-                    ? const Color(0xFFEAF3DE)
-                    : const Color(0xFFFCEBEB),
-                textColor: isAuthorized
-                    ? const Color(0xFF3B6D11)
-                    : const Color(0xFFA32D2D),
-              ),
-              const SizedBox(height: 4),
-
-              // Role: purple Admin tag OR outlined Make Admin button
-              if (isAdmin)
-                const _Tag(
-                  label: 'Admin',
-                  background: Color(0xFFEEEDFE),
-                  textColor: Color(0xFF3C3489),
-                )
-              else
-                _OutlinedActionButton(
-                  label: 'Make Admin',
-                  borderColor: const Color(0xFF3C3489),
-                  textColor: const Color(0xFF3C3489),
-                  onTap: () => onMakeAdmin(docId, name),
-                ),
-              const SizedBox(height: 4),
-
-              // Delete User button (always shown)
-              _FilledActionButton(
-                label: 'Delete User',
-                background: const Color(0xFFFCEBEB),
-                textColor: const Color(0xFFA32D2D),
-                onTap: () => onDelete(docId, name),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Small reusable widgets ─────────────────────────────────────────────────────
-
-class _Tag extends StatelessWidget {
+class _ActionButton extends StatelessWidget {
   final String label;
-  final Color background;
-  final Color textColor;
-
-  const _Tag({
-    required this.label,
-    required this.background,
-    required this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 7, color: textColor),
-      ),
-    );
-  }
-}
-
-class _OutlinedActionButton extends StatelessWidget {
-  final String label;
-  final Color borderColor;
-  final Color textColor;
+  final Color color;
+  final bool filled;
   final VoidCallback onTap;
 
-  const _OutlinedActionButton({
+  const _ActionButton({
     required this.label,
-    required this.borderColor,
-    required this.textColor,
+    required this.color,
+    required this.filled,
     required this.onTap,
   });
 
@@ -432,46 +330,16 @@ class _OutlinedActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          border: Border.all(color: borderColor),
-          borderRadius: BorderRadius.circular(4),
+          color: filled ? color.withOpacity(0.12) : null,
+          border: filled ? null : Border.all(color: color),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           label,
-          style: TextStyle(fontSize: 8, color: textColor),
-        ),
-      ),
-    );
-  }
-}
-
-class _FilledActionButton extends StatelessWidget {
-  final String label;
-  final Color background;
-  final Color textColor;
-  final VoidCallback onTap;
-
-  const _FilledActionButton({
-    required this.label,
-    required this.background,
-    required this.textColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(fontSize: 8, color: textColor),
+          style: TextStyle(
+              fontSize: 11, color: color, fontWeight: FontWeight.w600),
         ),
       ),
     );

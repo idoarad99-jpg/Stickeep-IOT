@@ -359,9 +359,10 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
               ),
               Expanded(
                 child: classrooms.isEmpty
-                    ? Center(
-                        child: Text('No classrooms yet',
-                            style: AppTextStyles.cardSubtitle),
+                    ? const EmptyState(
+                        icon: Icons.meeting_room_outlined,
+                        title: 'No classrooms yet',
+                        subtitle: 'Tap "Add classroom" above to create the first one.',
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),

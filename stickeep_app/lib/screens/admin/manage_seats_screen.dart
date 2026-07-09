@@ -329,9 +329,10 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
               ),
               Expanded(
                 child: seats.isEmpty
-                    ? Center(
-                        child: Text('No seats yet — add one above',
-                            style: AppTextStyles.cardSubtitle),
+                    ? const EmptyState(
+                        icon: Icons.event_seat_outlined,
+                        title: 'No seats yet',
+                        subtitle: 'Tap "Add seat" above to register the first sticker.',
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
