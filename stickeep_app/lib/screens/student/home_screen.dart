@@ -5,7 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/admin_home_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
-import 'package:stickeep_app/theme/theme_controller.dart';
+import 'package:stickeep_app/screens/settings/accessibility_settings_screen.dart';
 import 'package:stickeep_app/screens/student/classroom_screen.dart';
 import 'package:stickeep_app/screens/student/reservations_screen.dart';
 import 'package:stickeep_app/screens/student/scanner_screen.dart';
@@ -165,14 +165,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   IconButton(
-                    tooltip: ThemeController.instance.isDark ? 'Light mode' : 'Dark mode',
-                    icon: Icon(
-                      ThemeController.instance.isDark
-                          ? Icons.light_mode_outlined
-                          : Icons.dark_mode_outlined,
-                      color: Colors.white,
-                    ),
-                    onPressed: () => ThemeController.instance.toggle(),
+                    tooltip: 'Accessibility settings',
+                    icon: const Icon(Icons.accessibility_new, color: Colors.white),
+                    onPressed: () => Navigator.push(context,
+                        AppPageRoute(builder: (_) => const AccessibilitySettingsScreen())),
                   ),
                   IconButton(
                     icon: const Icon(Icons.logout, color: Colors.white),

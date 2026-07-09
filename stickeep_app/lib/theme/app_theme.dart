@@ -9,15 +9,34 @@ class AppColors {
   static bool get isDark => _isDark;
   static void setDark(bool value) => _isDark = value;
 
+  // Colorblind-safe mode swaps the green/red status pair (the classic
+  // red-green confusion for deuteranopia/protanopia, the most common forms)
+  // for a teal/orange pair that stays distinguishable, and adds icons
+  // wherever status is shown (see StatusTag) so color is never the only cue.
+  static bool _colorBlindMode = false;
+  static bool get colorBlindMode => _colorBlindMode;
+  static void setColorBlindMode(bool value) => _colorBlindMode = value;
+
   // Primary
   static Color get blue => _isDark ? const Color(0xFF5B9BD9) : const Color(0xFF185FA5);
   static Color get blueLight => _isDark ? const Color(0xFF17324B) : const Color(0xFFE6F1FB);
 
-  // Status
-  static Color get green => _isDark ? const Color(0xFF8BC34A) : const Color(0xFF3B6D11);
-  static Color get greenLight => _isDark ? const Color(0xFF203015) : const Color(0xFFEAF3DE);
-  static Color get red => _isDark ? const Color(0xFFEF9A9A) : const Color(0xFFA32D2D);
-  static Color get redLight => _isDark ? const Color(0xFF3D2020) : const Color(0xFFFCEBEB);
+  // Status — "green" semantically means free/success/positive.
+  static Color get green => _colorBlindMode
+      ? (_isDark ? const Color(0xFF4FC3C7) : const Color(0xFF00707A))
+      : (_isDark ? const Color(0xFF8BC34A) : const Color(0xFF3B6D11));
+  static Color get greenLight => _colorBlindMode
+      ? (_isDark ? const Color(0xFF102E30) : const Color(0xFFE0F4F5))
+      : (_isDark ? const Color(0xFF203015) : const Color(0xFFEAF3DE));
+
+  // Status — "red" semantically means taken/danger/negative.
+  static Color get red => _colorBlindMode
+      ? (_isDark ? const Color(0xFFFFB74D) : const Color(0xFFB1500A))
+      : (_isDark ? const Color(0xFFEF9A9A) : const Color(0xFFA32D2D));
+  static Color get redLight => _colorBlindMode
+      ? (_isDark ? const Color(0xFF3D2A10) : const Color(0xFFFDECD8))
+      : (_isDark ? const Color(0xFF3D2020) : const Color(0xFFFCEBEB));
+
   static Color get amber => _isDark ? const Color(0xFFFFB74D) : const Color(0xFF854F0B);
   static Color get amberLight => _isDark ? const Color(0xFF3D2E14) : const Color(0xFFFAEEDA);
 
@@ -299,34 +318,41 @@ class EmptyState extends StatelessWidget {
 }
 
 // Widget עזר לתגיות סטטוס (free / reserved / occupied)
+// Carries an icon alongside color+text so status is never conveyed by
+// color alone (important for colorblind users).
 class StatusTag extends StatelessWidget {
   final String label;
   final Color backgroundColor;
   final Color textColor;
+  final IconData? icon;
 
   const StatusTag({
     super.key,
     required this.label,
     required this.backgroundColor,
     required this.textColor,
+    this.icon,
   });
 
   factory StatusTag.free() => StatusTag(
         label: 'Free',
         backgroundColor: AppColors.greenLight,
         textColor: AppColors.green,
+        icon: Icons.check_circle_outline,
       );
 
   factory StatusTag.occupied() => StatusTag(
         label: 'Occupied',
         backgroundColor: AppColors.redLight,
         textColor: AppColors.red,
+        icon: Icons.block,
       );
 
   factory StatusTag.reserved() => StatusTag(
         label: 'Reserved',
         backgroundColor: AppColors.amberLight,
         textColor: AppColors.amber,
+        icon: Icons.schedule,
       );
 
   @override
@@ -337,13 +363,22 @@ class StatusTag extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: textColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: textColor),
+            const SizedBox(width: 3),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: textColor,
+            ),
+          ),
+        ],
       ),
     );
   }
