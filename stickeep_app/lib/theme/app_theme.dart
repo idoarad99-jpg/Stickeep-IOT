@@ -17,6 +17,17 @@ class AppColors {
   static bool get colorBlindMode => _colorBlindMode;
   static void setColorBlindMode(bool value) => _colorBlindMode = value;
 
+  // High-contrast mode: pushes text/border contrast ratios up and thickens
+  // outlines for low-vision users, on top of whatever dark/colorblind mode
+  // is already active.
+  static bool _highContrast = false;
+  static bool get highContrast => _highContrast;
+  static void setHighContrast(bool value) => _highContrast = value;
+
+  /// Card/tile borders are thicker in high-contrast mode so edges don't rely
+  /// on a subtle color difference alone.
+  static double get borderWidth => _highContrast ? 2 : 1;
+
   // Primary
   static Color get blue => _isDark ? const Color(0xFF5B9BD9) : const Color(0xFF185FA5);
   static Color get blueLight => _isDark ? const Color(0xFF17324B) : const Color(0xFFE6F1FB);
@@ -46,9 +57,15 @@ class AppColors {
 
   // Neutral
   static Color get gray => _isDark ? const Color(0xFF242424) : const Color(0xFFF5F5F5);
-  static Color get border => _isDark ? const Color(0xFF383838) : const Color(0xFFE0E0E0);
+  static Color get border => _highContrast
+      ? (_isDark ? const Color(0xFF8A8A8A) : const Color(0xFF4A4A4A))
+      : (_isDark ? const Color(0xFF383838) : const Color(0xFFE0E0E0));
   static Color get textPrimary => _isDark ? const Color(0xFFF2F2F2) : const Color(0xFF1A1A1A);
-  static Color get textSecondary => _isDark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280);
+  // Muted secondary text is the classic low-contrast offender — bump it much
+  // closer to full black/white when high-contrast mode is on.
+  static Color get textSecondary => _highContrast
+      ? (_isDark ? const Color(0xFFE0E0E0) : const Color(0xFF2E2E2E))
+      : (_isDark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280));
 
   // Card/sheet background — use instead of a literal Colors.white so cards
   // adapt in dark mode.
@@ -72,9 +89,18 @@ class AppTheme {
     final scaffoldBg = dark ? const Color(0xFF121212) : const Color(0xFFF0F4F8);
     final surface = dark ? const Color(0xFF1E1E1E) : Colors.white;
     final fill = dark ? const Color(0xFF242424) : const Color(0xFFF5F5F5);
-    final border = dark ? const Color(0xFF383838) : const Color(0xFFE0E0E0);
+    // Mirrors AppColors.border/.textSecondary but keyed off this build's own
+    // `dark` param (not the static AppColors._isDark flag) — _build runs
+    // once per light/dark variant regardless of which one is active.
+    final highContrast = AppColors.highContrast;
+    final border = highContrast
+        ? (dark ? const Color(0xFF8A8A8A) : const Color(0xFF4A4A4A))
+        : (dark ? const Color(0xFF383838) : const Color(0xFFE0E0E0));
     final textPrimary = dark ? const Color(0xFFF2F2F2) : const Color(0xFF1A1A1A);
-    final textSecondary = dark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280);
+    final textSecondary = highContrast
+        ? (dark ? const Color(0xFFE0E0E0) : const Color(0xFF2E2E2E))
+        : (dark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280));
+    final borderWidth = AppColors.borderWidth;
 
     final base = dark ? ThemeData.dark() : ThemeData.light();
 
@@ -128,7 +154,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: textPrimary,
           minimumSize: const Size(double.infinity, 50),
-          side: BorderSide(color: border),
+          side: BorderSide(color: border, width: borderWidth),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           textStyle: const TextStyle(
             fontSize: 14,
@@ -146,15 +172,15 @@ class AppTheme {
         hintStyle: TextStyle(fontSize: 14, color: textSecondary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: border),
+          borderSide: BorderSide(color: border, width: borderWidth),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: border),
+          borderSide: BorderSide(color: border, width: borderWidth),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: primary, width: 1.5),
+          borderSide: BorderSide(color: primary, width: borderWidth + 0.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
@@ -237,6 +263,9 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(18),
+        border: AppColors.highContrast
+            ? Border.all(color: AppColors.border, width: AppColors.borderWidth)
+            : null,
         boxShadow: AppColors.cardShadow,
       ),
       child: child,

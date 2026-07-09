@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class PendingUsersScreen extends StatefulWidget {
   const PendingUsersScreen({super.key});
@@ -79,7 +80,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AdminListSkeleton();
           }
 
           final docs = snapshot.data?.docs ?? [];

@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:stickeep_app/models/seat.dart';
 import 'package:stickeep_app/screens/student/confirm_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/page_route.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class SeatMapScreen extends StatefulWidget {
   final String classroomId;
@@ -178,7 +180,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             );
           }
           if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const AdminListSkeleton();
           }
 
           final seats = snapshot.data!.docs
@@ -259,10 +261,13 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                               return GestureDetector(
                                 onTap: isTaken
                                     ? null
-                                    : () => setState(() {
+                                    : () {
+                                        HapticFeedback.selectionClick();
+                                        setState(() {
                                           _selectedSeatId =
                                               isSelected ? null : seat.seatId;
-                                        }),
+                                        });
+                                      },
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 200),
                                   curve: Curves.easeOut,

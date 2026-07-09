@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
@@ -94,6 +95,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     if (value == widget.reservationId) {
       _confirmArrival();
     } else {
+      HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text("QR code doesn't match. Please try again."),
@@ -160,6 +162,7 @@ class _ScannerScreenState extends State<ScannerScreen>
 
     if (!mounted) return;
 
+    HapticFeedback.mediumImpact();
     _cameraController.stop();
     _controller.stop();
     _controller.duration = _bounceDuration;

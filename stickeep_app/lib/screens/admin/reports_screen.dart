@@ -1,6 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -59,7 +60,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         stream: ref.onValue,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AdminListSkeleton();
           }
 
           if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {

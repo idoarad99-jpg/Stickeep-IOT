@@ -8,6 +8,7 @@ import 'package:stickeep_app/screens/admin/manage_seats_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/cancel_reservation.dart';
 import 'package:stickeep_app/utils/page_route.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class ManageClassroomsScreen extends StatefulWidget {
   const ManageClassroomsScreen({super.key});
@@ -335,7 +336,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AdminListSkeleton();
           }
 
           final classrooms =

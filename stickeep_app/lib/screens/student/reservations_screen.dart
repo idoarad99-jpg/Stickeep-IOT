@@ -35,6 +35,17 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     );
   }
 
+  /// Section header for a reservation's date, relative to today. Only
+  /// meaningful for the upcoming tab — past/cancelled entries in history
+  /// don't get grouped since "Today/Tomorrow" doesn't apply to them.
+  String _sectionFor(DateTime date, DateTime today) {
+    final diff = date.difference(today).inDays;
+    if (diff == 0) return 'Today';
+    if (diff == 1) return 'Tomorrow';
+    if (diff > 1 && diff < 7) return 'This week';
+    return 'Later';
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -125,58 +136,71 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
                 if (reservations.isEmpty) return _emptyState(showUpcoming);
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: reservations.length,
-                  itemBuilder: (context, index) {
-                    final r = reservations[index];
-                    final d = _parseDate(r.date);
-                    final isPast = d != null && d.isBefore(todayDate);
-                    final displayStatus = !r.isUpcoming && !isPast
-                        ? ReservationDisplayStatus.cancelled
-                        : isPast
-                            ? ReservationDisplayStatus.past
-                            : ReservationDisplayStatus.reserved;
+                // Build a flat list of rows, inserting a section header
+                // whenever the date bucket changes (upcoming tab only).
+                final rows = <Widget>[];
+                String? lastSection;
+                for (final r in reservations) {
+                  final d = _parseDate(r.date);
+                  final isPast = d != null && d.isBefore(todayDate);
+                  final displayStatus = !r.isUpcoming && !isPast
+                      ? ReservationDisplayStatus.cancelled
+                      : isPast
+                          ? ReservationDisplayStatus.past
+                          : ReservationDisplayStatus.reserved;
 
-                    return ReservationCard(
-                      reservation: r,
-                      displayStatus: displayStatus,
-                      onCancel: showUpcoming
-                          ? () => _cancelReservation(context, uid, r)
-                          : null,
+                  if (showUpcoming && d != null) {
+                    final section = _sectionFor(d, todayDate);
+                    if (section != lastSection) {
+                      rows.add(Padding(
+                        padding: EdgeInsets.only(
+                            top: lastSection == null ? 0 : 20, bottom: 8),
+                        child: Text(section, style: AppTextStyles.sectionTitle),
+                      ));
+                      lastSection = section;
+                    }
+                  }
 
-
-
-                      onScanArrival: (r.isUpcoming &&
-                              r.qrToken != null &&
-                              r.qrToken!.isNotEmpty &&
-                              r.qrStatus != 'arrived' &&
-                              r.nfcStatus != 'approved')
-                          ? () => Navigator.push(
-                                context,
-                                AppPageRoute(
-                                  builder: (_) => ScannerScreen(
-                                    classroom: r.classroom,
-                                    studentName: uid,
-                                    reservationId: r.qrToken!,
-                                  ),
+                  rows.add(ReservationCard(
+                    reservation: r,
+                    displayStatus: displayStatus,
+                    onCancel: showUpcoming
+                        ? () => _cancelReservation(context, uid, r)
+                        : null,
+                    onScanArrival: (r.isUpcoming &&
+                            r.qrToken != null &&
+                            r.qrToken!.isNotEmpty &&
+                            r.qrStatus != 'arrived' &&
+                            r.nfcStatus != 'approved')
+                        ? () => Navigator.push(
+                              context,
+                              AppPageRoute(
+                                builder: (_) => ScannerScreen(
+                                  classroom: r.classroom,
+                                  studentName: uid,
+                                  reservationId: r.qrToken!,
                                 ),
-                              )
-                          : null,
-                      onShowQr: (r.isUpcoming &&
-                              r.qrToken != null &&
-                              r.qrToken!.isNotEmpty)
-                          ? () => showQrDialog(
-                                context,
-                                reservationId: r.qrToken!,
-                                classroom: r.classroom,
-                                seat: r.seatNumber.toString(),
-                                date: r.date,
-                                time: '${r.timeStart}–${r.timeEnd}',
-                              )
-                          : null,
-                    );
-                  },
+                              ),
+                            )
+                        : null,
+                    onShowQr: (r.isUpcoming &&
+                            r.qrToken != null &&
+                            r.qrToken!.isNotEmpty)
+                        ? () => showQrDialog(
+                              context,
+                              reservationId: r.qrToken!,
+                              classroom: r.classroom,
+                              seat: r.seatNumber.toString(),
+                              date: r.date,
+                              time: '${r.timeStart}–${r.timeEnd}',
+                            )
+                        : null,
+                  ));
+                }
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: rows,
                 );
               },
             ),

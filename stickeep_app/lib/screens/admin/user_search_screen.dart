@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:stickeep_app/screens/admin/user_reservations_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/page_route.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class UserSearchScreen extends StatefulWidget {
   const UserSearchScreen({super.key});
@@ -56,7 +57,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const AdminListSkeleton();
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {

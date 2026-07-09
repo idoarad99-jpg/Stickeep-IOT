@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:stickeep_app/models/reservation.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 
@@ -139,6 +140,7 @@ Future<int> handleCancelChoice({
     );
     if (confirm != true) return 0;
     await cancelReservation(uid: uid, r: r, cancelledByAdminUid: cancelledByAdminUid);
+    HapticFeedback.mediumImpact();
     return 1;
   }
 
@@ -169,13 +171,16 @@ Future<int> handleCancelChoice({
   switch (choice) {
     case _CancelChoice.one:
       await cancelReservation(uid: uid, r: r, cancelledByAdminUid: cancelledByAdminUid);
+      HapticFeedback.mediumImpact();
       return 1;
     case _CancelChoice.group:
-      return cancelRecurringGroup(
+      final count = await cancelRecurringGroup(
         uid: uid,
         recurringGroupId: r.recurringGroupId!,
         cancelledByAdminUid: cancelledByAdminUid,
       );
+      HapticFeedback.mediumImpact();
+      return count;
     case _CancelChoice.keep:
     case null:
       return 0;

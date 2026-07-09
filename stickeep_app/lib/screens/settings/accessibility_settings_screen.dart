@@ -48,6 +48,15 @@ class AccessibilitySettingsScreen extends StatelessWidget {
                       value: a11y.colorBlindMode,
                       onChanged: (v) => a11y.setColorBlindMode(v),
                     ),
+                    Divider(height: 1, color: AppColors.border),
+                    SwitchListTile(
+                      title: const Text('High contrast'),
+                      subtitle: const Text(
+                          'Darker text, thicker borders, and stronger edges for low vision'),
+                      secondary: Icon(Icons.contrast_outlined, color: AppColors.blue),
+                      value: a11y.highContrast,
+                      onChanged: (v) => a11y.setHighContrast(v),
+                    ),
                   ],
                 ),
               ),

@@ -36,21 +36,25 @@ class AccessibilityController extends ChangeNotifier {
   static final AccessibilityController instance = AccessibilityController._();
 
   bool _colorBlindMode = false;
+  bool _highContrast = false;
   TextSizeOption _textSize = TextSizeOption.normal;
 
   bool get colorBlindMode => _colorBlindMode;
+  bool get highContrast => _highContrast;
   TextSizeOption get textSize => _textSize;
   double get textScale => _textSize.scale;
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _colorBlindMode = prefs.getBool('colorblind_mode') ?? false;
+    _highContrast = prefs.getBool('high_contrast') ?? false;
     final savedSize = prefs.getString('text_size');
     _textSize = TextSizeOption.values.firstWhere(
       (o) => o.name == savedSize,
       orElse: () => TextSizeOption.normal,
     );
     AppColors.setColorBlindMode(_colorBlindMode);
+    AppColors.setHighContrast(_highContrast);
   }
 
   Future<void> setColorBlindMode(bool value) async {
@@ -59,6 +63,14 @@ class AccessibilityController extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('colorblind_mode', value);
+  }
+
+  Future<void> setHighContrast(bool value) async {
+    _highContrast = value;
+    AppColors.setHighContrast(value);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('high_contrast', value);
   }
 
   Future<void> setTextSize(TextSizeOption value) async {

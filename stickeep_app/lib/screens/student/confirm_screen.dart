@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:stickeep_app/screens/student/recurrence_screen.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/utils/booking.dart';
@@ -93,6 +94,8 @@ class _ConfirmScreenState extends State<ConfirmScreen> {
       );
 
       if (!mounted) return;
+
+      HapticFeedback.mediumImpact();
 
       Navigator.pushReplacement(
         context,

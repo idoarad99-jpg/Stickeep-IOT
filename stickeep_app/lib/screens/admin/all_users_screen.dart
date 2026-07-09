@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class AllUsersScreen extends StatefulWidget {
   const AllUsersScreen({super.key});
@@ -145,7 +146,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               stream: _firestore.collection('students').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const AdminListSkeleton();
                 }
 
                 var docs = snapshot.data?.docs ?? [];

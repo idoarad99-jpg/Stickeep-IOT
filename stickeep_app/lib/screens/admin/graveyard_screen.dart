@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/widgets/loading_skeleton.dart';
 
 class GraveyardScreen extends StatelessWidget {
   const GraveyardScreen({super.key});
@@ -21,7 +22,7 @@ class GraveyardScreen extends StatelessWidget {
         stream: ref.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AdminListSkeleton();
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
