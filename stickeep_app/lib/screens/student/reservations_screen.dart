@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,26 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
   // History-tab filters. Both on by default (show everything).
   bool _showPast = true;
   bool _showCancelled = true;
+
+  // Fetched once for display on the scanner's "Welcome to ..." screen —
+  // RTDB reservation entries don't carry the student's name, only their uid.
+  String _studentName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStudentName();
+  }
+
+  Future<void> _loadStudentName() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final doc =
+        await FirebaseFirestore.instance.collection('students').doc(uid).get();
+    if (mounted) {
+      setState(() => _studentName = doc.data()?['name'] as String? ?? '');
+    }
+  }
 
   DateTime? _parseDate(String d) {
     final parts = d.split('.');
@@ -178,7 +199,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
                               AppPageRoute(
                                 builder: (_) => ScannerScreen(
                                   classroom: r.classroom,
-                                  studentName: uid,
+                                  studentName: _studentName,
                                   reservationId: r.qrToken!,
                                 ),
                               ),

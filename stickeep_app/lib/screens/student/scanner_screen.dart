@@ -451,7 +451,10 @@ class _SuccessBox extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: AppColors.green)),
           const SizedBox(height: 4),
-          Text('Welcome to $classroom, $studentName!',
+          Text(
+              studentName.isEmpty
+                  ? 'Welcome to $classroom!'
+                  : 'Welcome to $classroom, $studentName!',
               textAlign: TextAlign.center,
               style: const TextStyle(
                   fontSize: 11, color: Color(0xFF639922))),

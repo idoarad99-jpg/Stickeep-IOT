@@ -407,8 +407,6 @@ class _NextReservationCard extends StatelessWidget {
                           (next!['qr_token'] as String? ?? '').trim();
                       final classroom =
                           next['classroom'] as String? ?? '';
-                      final studentName =
-                          FirebaseAuth.instance.currentUser?.email ?? '';
                       return _ReservationSummary(
                         data: next,
                         onScanArrival: qrToken.isNotEmpty
