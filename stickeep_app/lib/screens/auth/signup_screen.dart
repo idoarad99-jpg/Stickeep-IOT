@@ -128,12 +128,11 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       // 1. Create Firebase Auth account
-      final credential = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
 
       // 2. Save registration request to Firestore
       final nfcCleaned = _nfcController.text
@@ -152,7 +151,6 @@ class _SignupScreenState extends State<SignupScreen> {
         'status': 'pending',
         'submittedAt': DateTime.now(),
       });
-
 
       if (!mounted) return;
 
@@ -216,235 +214,283 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBg,
-      appBar: AppBar(
-        title: const Text('Create account'),
-        centerTitle: true,
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Tappable avatar with "+" badge ───────────────────────────
-              Center(
-                child: GestureDetector(
-                  onTap: _showPhotoBottomSheet,
-                  child: SizedBox(
-                    width: 80,
-                    height: 80,
-                    child: Stack(
-                      clipBehavior: Clip.none,
+              // ── Gradient header with back button + avatar ────────────────
+              Container(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.blue, AppColors.blue.withOpacity(0.75)],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
-                        _avatarBytes != null
-                            ? CircleAvatar(
-                                radius: 40,
-                                backgroundImage: MemoryImage(_avatarBytes!),
-                              )
-                            : Container(
-                                width: 80,
-                                height: 80,
-                                decoration: BoxDecoration(
-                                  color: AppColors.blueLight,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.person,
-                                  size: 44,
-                                  color: AppColors.blue,
-                                ),
-                              ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: AppColors.blue,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              size: 15,
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                        ),
+                        const Expanded(
+                          child: Text(
+                            'Create account',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
                           ),
                         ),
+                        const SizedBox(width: 48), // balances the back button
                       ],
                     ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // ── Full name ────────────────────────────────────────────────
-              Text('Full name', style: AppTextStyles.label),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _nameController,
-                textCapitalization: TextCapitalization.words,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Enter your full name',
-                  errorText: _required(_nameController),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── Email ────────────────────────────────────────────────────
-              Text('Email', style: AppTextStyles.label),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Enter your email',
-                  errorText: _required(_emailController),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── Password ─────────────────────────────────────────────────
-              Text('Password', style: AppTextStyles.label),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                onChanged: (_) => setState(() {}),
-                decoration: InputDecoration(
-                  hintText: 'Create a password',
-                  errorText: _required(_passwordController),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: 12),
+                    // ── Tappable avatar with "+" badge ───────────────────────
+                    GestureDetector(
+                      onTap: _showPhotoBottomSheet,
+                      child: SizedBox(
+                        width: 84,
+                        height: 84,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            _avatarBytes != null
+                                ? CircleAvatar(
+                                    radius: 42,
+                                    backgroundImage: MemoryImage(_avatarBytes!),
+                                  )
+                                : Container(
+                                    width: 84,
+                                    height: 84,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.person,
+                                      size: 44,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: AppColors.blue, width: 2),
+                                ),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 15,
+                                  color: AppColors.blue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── Student ID (highlighted) ─────────────────────────────────
-              Text('Student ID number', style: AppTextStyles.label),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _studentIdController,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                style: TextStyle(
-                  color: AppColors.blue,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 3,
-                  fontSize: 15,
-                ),
-                decoration: InputDecoration(
-                  hintText: '123456789',
-                  hintStyle: TextStyle(
-                    color: AppColors.blue.withOpacity(0.45),
-                    letterSpacing: 3,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                  filled: true,
-                  fillColor: AppColors.blueLight,
-                  errorText: _required(_studentIdController),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.blue),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppColors.blue),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        BorderSide(color: AppColors.blue, width: 2),
-                  ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.red),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.red, width: 2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '⭐ This number will appear on your seat sticker',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.blue,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── NFC Card Serial Number (optional) ────────────────────────
-              Text('NFC Card Serial Number', style: AppTextStyles.label),
-              const SizedBox(height: 6),
-              TextField(
-                controller: _nfcController,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: 'e.g. 04:80:7D:CA:C5:78:80',
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '📱 Scan your Technion card with any NFC reader app to find this number',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.textSecondary,
-                  fontStyle: FontStyle.italic,
+                  ],
                 ),
               ),
               const SizedBox(height: 28),
 
-              // ── Create account ───────────────────────────────────────────
-              ElevatedButton(
-                onPressed: _isLoading ? null : _onCreateAccount,
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Text('Create account'),
-              ),
-
-              // ── Error message ────────────────────────────────────────────
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 10),
-                Center(
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 13,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Full name ────────────────────────────────────────────────
+                    Text('Full name', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your full name',
+                        errorText: _required(_nameController),
+                      ),
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-              // ── Back to login ────────────────────────────────────────────
-              OutlinedButton(
-                onPressed: _isLoading ? null : () => Navigator.pop(context),
-                child: const Text('Already have an account? Login'),
+                    // ── Email ────────────────────────────────────────────────────
+                    Text('Email', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Enter your email',
+                        errorText: _required(_emailController),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Password ─────────────────────────────────────────────────
+                    Text('Password', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: _obscurePassword,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Create a password',
+                        errorText: _required(_passwordController),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            color: AppColors.textSecondary,
+                          ),
+                          onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── Student ID (highlighted) ─────────────────────────────────
+                    Text('Student ID number', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _studentIdController,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => setState(() {}),
+                      style: TextStyle(
+                        color: AppColors.blue,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 3,
+                        fontSize: 15,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: '123456789',
+                        hintStyle: TextStyle(
+                          color: AppColors.blue.withOpacity(0.45),
+                          letterSpacing: 3,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.blueLight,
+                        errorText: _required(_studentIdController),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppColors.blue),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: AppColors.blue),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              BorderSide(color: AppColors.blue, width: 2),
+                        ),
+                        errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(color: Colors.red),
+                        ),
+                        focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '⭐ This number will appear on your seat sticker',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.blue,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // ── NFC Card Serial Number (optional) ────────────────────────
+                    Text('NFC Card Serial Number', style: AppTextStyles.label),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: _nfcController,
+                      onChanged: (_) => setState(() {}),
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 04:80:7D:CA:C5:78:80',
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '📱 Scan your Technion card with any NFC reader app to find this number',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+
+                    // ── Create account ───────────────────────────────────────────
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _onCreateAccount,
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text('Create account'),
+                    ),
+
+                    // ── Error message ────────────────────────────────────────────
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 10),
+                      Center(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 13,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+
+                    // ── Back to login ────────────────────────────────────────────
+                    OutlinedButton(
+                      onPressed:
+                          _isLoading ? null : () => Navigator.pop(context),
+                      child: const Text('Already have an account? Login'),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
