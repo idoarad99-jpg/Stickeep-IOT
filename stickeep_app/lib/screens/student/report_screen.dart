@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -12,19 +13,27 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   final _descController = TextEditingController();
+  final _buildingController = TextEditingController();
+  final _roomController = TextEditingController();
+  final _seatController = TextEditingController();
+
   final List<String> _tags = [
     'Seat broken',
     'Sensor issue',
     'Screen not working',
     'Accessibility issue',
-    'Other'
+    'Other',
   ];
+
   String? _selectedTag;
   bool _isLoading = false;
 
   @override
   void dispose() {
     _descController.dispose();
+    _buildingController.dispose();
+    _roomController.dispose();
+    _seatController.dispose();
     super.dispose();
   }
 
@@ -38,13 +47,29 @@ class _ReportScreenState extends State<ReportScreen> {
     setState(() => _isLoading = true);
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+      // Fetch student name for display in admin
+      String studentName = '';
+      if (uid.isNotEmpty) {
+        final doc = await FirebaseFirestore.instance
+            .collection('students')
+            .doc(uid)
+            .get();
+        studentName = doc.data()?['name'] as String? ?? '';
+      }
+
       await FirebaseDatabase.instance.ref('reports').push().set({
         'uid': uid,
+        'student_name': studentName,
         'tag': _selectedTag,
         'description': _descController.text.trim(),
+        'building': _buildingController.text.trim(),
+        'room': _roomController.text.trim(),
+        'seat': _seatController.text.trim(),
         'created_at': DateTime.now().toIso8601String(),
         'status': 'open',
       });
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Report submitted. Thank you!')),
@@ -77,8 +102,8 @@ class _ReportScreenState extends State<ReportScreen> {
                 return GestureDetector(
                   onTap: () => setState(() => _selectedTag = tag),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: selected ? AppColors.redLight : Colors.white,
                       borderRadius: BorderRadius.circular(20),
@@ -91,7 +116,9 @@ class _ReportScreenState extends State<ReportScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: selected ? AppColors.red : AppColors.textPrimary,
+                        color: selected
+                            ? AppColors.red
+                            : AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -99,6 +126,36 @@ class _ReportScreenState extends State<ReportScreen> {
               }).toList(),
             ),
             const SizedBox(height: 20),
+
+            const Text('Location (optional)', style: AppTextStyles.label),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _buildingController,
+                    decoration: const InputDecoration(hintText: 'Building'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _roomController,
+                    decoration: const InputDecoration(hintText: 'Room'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _seatController,
+                    decoration: const InputDecoration(hintText: 'Seat'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
             const Text('Description (optional)', style: AppTextStyles.label),
             const SizedBox(height: 8),
             TextField(
@@ -108,9 +165,11 @@ class _ReportScreenState extends State<ReportScreen> {
                   const InputDecoration(hintText: 'Describe the issue...'),
             ),
             const SizedBox(height: 32),
+
             ElevatedButton(
               onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: AppColors.red),
               child: _isLoading
                   ? const SizedBox(
                       height: 20,
