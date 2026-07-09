@@ -140,6 +140,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.home_outlined),
+          tooltip: 'Home',
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
             AppPageRoute(builder: (_) => const HomeScreen(userName: '', userRole: '')),

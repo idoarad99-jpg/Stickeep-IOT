@@ -63,6 +63,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.home_outlined),
+          tooltip: 'Home',
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
             AppPageRoute(

@@ -239,6 +239,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.pop(context),
+                          tooltip: 'Back',
                           icon:
                               const Icon(Icons.arrow_back, color: Colors.white),
                         ),
@@ -258,54 +259,59 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 12),
                     // ── Tappable avatar with "+" badge ───────────────────────
-                    GestureDetector(
-                      onTap: _showPhotoBottomSheet,
-                      child: SizedBox(
-                        width: 84,
-                        height: 84,
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            _avatarBytes != null
-                                ? CircleAvatar(
-                                    radius: 42,
-                                    backgroundImage: MemoryImage(_avatarBytes!),
-                                  )
-                                : Container(
-                                    width: 84,
-                                    height: 84,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      shape: BoxShape.circle,
+                    Semantics(
+                      button: true,
+                      label: 'Add profile photo',
+                      child: GestureDetector(
+                        onTap: _showPhotoBottomSheet,
+                        child: SizedBox(
+                          width: 84,
+                          height: 84,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              _avatarBytes != null
+                                  ? CircleAvatar(
+                                      radius: 42,
+                                      backgroundImage:
+                                          MemoryImage(_avatarBytes!),
+                                    )
+                                  : Container(
+                                      width: 84,
+                                      height: 84,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.person,
+                                        size: 44,
+                                        color: Colors.white,
+                                      ),
                                     ),
-                                    child: const Icon(
-                                      Icons.person,
-                                      size: 44,
-                                      color: Colors.white,
-                                    ),
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 26,
+                                  height: 26,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: AppColors.blue, width: 2),
                                   ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 26,
-                                height: 26,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: AppColors.blue, width: 2),
-                                ),
-                                child: Icon(
-                                  Icons.add,
-                                  size: 15,
-                                  color: AppColors.blue,
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 15,
+                                    color: AppColors.blue,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -364,6 +370,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 : Icons.visibility_outlined,
                             color: AppColors.textSecondary,
                           ),
+                          tooltip: _obscurePassword
+                              ? 'Show password'
+                              : 'Hide password',
                           onPressed: () => setState(
                               () => _obscurePassword = !_obscurePassword),
                         ),

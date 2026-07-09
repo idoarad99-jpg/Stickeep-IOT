@@ -182,6 +182,7 @@ class _ScannerScreenState extends State<ScannerScreen>
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.home_outlined),
+          tooltip: 'Home',
           onPressed: () => Navigator.pushAndRemoveUntil(
             context,
             AppPageRoute(

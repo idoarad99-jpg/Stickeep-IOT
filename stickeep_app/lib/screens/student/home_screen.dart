@@ -171,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         AppPageRoute(builder: (_) => const AccessibilitySettingsScreen())),
                   ),
                   IconButton(
+                    tooltip: 'Sign out',
                     icon: const Icon(Icons.logout, color: Colors.white),
                     onPressed: () async {
                       await FirebaseAuth.instance.signOut();
