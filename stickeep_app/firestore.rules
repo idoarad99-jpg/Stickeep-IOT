@@ -51,7 +51,12 @@ service cloud.firestore {
       allow write: if isSignedIn();
 
       match /reservations/{resId} {
-        allow read: if isSignedIn();
+        // The physical ESP32 seat display polls this exact subcollection
+        // (GET .../seats/{seatId}/reservations) over a plain unauthenticated
+        // HTTPClient request — the firmware has no Firebase Auth mechanism
+        // at all. This must stay world-readable or every seat display loses
+        // live reservation data. Writes still require sign-in.
+        allow read: if true;
         allow create: if isSignedIn() &&
           request.resource.data.userId == request.auth.uid;
         allow update, delete: if isAdmin() ||
