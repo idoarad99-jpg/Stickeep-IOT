@@ -47,31 +47,39 @@ tft.drawString(batteryText, 152, 14, 1);
   drawDateTimeStatus();
 }
 
+// Was fixed to 8:30-16:30 in 1-hour blocks — any reservation outside
+// that window (real bookings do run into the evening, e.g. 20:25-21:35
+// in test data) showed up nowhere on this screen, making the seat look
+// free while actually occupied. Widened to a full 8:00-24:00 day in
+// 2-hour blocks instead. Still not truly "data-driven" from real
+// classroom operating hours (that'd need a new Firestore schema field,
+// out of scope before the submission deadline) but this closes the
+// actual display-correctness gap with a minimal, low-risk change.
 void drawMainScreenReservations() {
   tft.setTextColor(TFT_BLACK, TFT_WHITE);
 
   const int NUM_SLOTS = 8;
 
   String slotStart[NUM_SLOTS] = {
-    "8:30",
-    "9:30",
-    "10:30",
-    "11:30",
-    "12:30",
-    "13:30",
-    "14:30",
-    "15:30"
+    "8:00",
+    "10:00",
+    "12:00",
+    "14:00",
+    "16:00",
+    "18:00",
+    "20:00",
+    "22:00"
   };
 
   String slotEnd[NUM_SLOTS] = {
-    "9:30",
-    "10:30",
-    "11:30",
-    "12:30",
-    "13:30",
-    "14:30",
-    "15:30",
-    "16:30"
+    "10:00",
+    "12:00",
+    "14:00",
+    "16:00",
+    "18:00",
+    "20:00",
+    "22:00",
+    "24:00"
   };
 
   int slotX[NUM_SLOTS] = {
