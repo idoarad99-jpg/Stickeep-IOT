@@ -127,6 +127,67 @@ exports.confirmNfcArrival = onRequest(
   }
 );
 
+/**
+ * GET ?seatId=SEAT_T2_1
+ * Header: x-device-key: <DEVICE_API_KEY>
+ *
+ * Read-proxy for the seat display's polling loop (FirebaseManager.ino's
+ * updateReservationsFromFirebase). Not required today — the direct
+ * Firestore read at seats/{seatId}/reservations is world-readable — this
+ * exists so that read can eventually be locked back down to
+ * "signed-in users only" with zero public exception, once the firmware
+ * is switched to call this endpoint instead of hitting Firestore directly.
+ *
+ * DO NOT tighten the seats/{seatId}/reservations Firestore rule until
+ * Ido's firmware has actually been redeployed to call this endpoint —
+ * doing so first will break every seat display again, the same way the
+ * original rules deploy did on 2026-07-09.
+ *
+ * Returns a flat, already-unwrapped array (unlike Firestore's verbose
+ * REST format with fields.stringValue everywhere), so the firmware's JSON
+ * parsing gets simpler too, not just more secure.
+ */
+exports.getSeatReservations = onRequest(
+  { secrets: [DEVICE_API_KEY], cors: false },
+  async (req, res) => {
+    if (req.method !== 'GET') {
+      res.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    const providedKey = req.get('x-device-key');
+    if (!providedKey || providedKey !== DEVICE_API_KEY.value()) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const seatId = req.query.seatId;
+    if (!seatId) {
+      res.status(400).json({ error: 'seatId is required' });
+      return;
+    }
+
+    try {
+      const snap = await db.collection('seats').doc(seatId).collection('reservations').get();
+      const reservations = snap.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          qrToken: data.qrToken || doc.id,
+          date: data.date || '',
+          startTime: data.startTime || '',
+          endTime: data.endTime || '',
+          status: data.status || '',
+          studentNumber: data.studentNumber || '',
+        };
+      });
+      res.status(200).json({ reservations });
+    } catch (err) {
+      console.error('getSeatReservations failed', err);
+      res.status(500).json({ error: 'Internal error' });
+    }
+  }
+);
+
 // Finds the RTDB reservation entry (keyed by push-id, not the Firestore
 // reservationId) via its qr_token field, and sets nfc_status on it — the
 // exact field lib/widgets/reservation_card.dart's live badge listens to.
