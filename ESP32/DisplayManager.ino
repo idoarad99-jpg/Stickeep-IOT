@@ -12,7 +12,7 @@ void updateScreen() {
 
     case STATE_QR_SCAN:
       Serial.println("State: QR_SCAN");
-      drawArrayJpeg(QR_image, sizeof(QR_image), 0, 0);
+      drawQrScreen();
       drawTopStatusBar();
       break;
 
@@ -151,4 +151,69 @@ void drawDateTimeStatus()
   // Time
   tft.fillRect(190, 14, 40, 10, TFT_WHITE);
   tft.drawString(currentTimeText, 198, 15, 1);
+}
+
+// Renders a real QR code encoding the active reservation's qrToken, so a
+// phone scanning it (via the app's existing camera scan) actually
+// matches — replacing the old static placeholder image which could never
+// match any real reservation. Requires the "QRCode" library by Richard
+// Moore (Arduino Library Manager -> search "QRCode", ricmoo/QRCode).
+//
+// Screen is 240x135 in this rotation. Version 4 (33x33 modules) at 3px
+// per module is 99x99px, comfortably fits with room for instruction text.
+void drawQrScreen() {
+  tft.fillScreen(TFT_WHITE);
+  tft.setTextColor(TFT_BLACK, TFT_WHITE);
+
+  if (activeQrToken.length() == 0) {
+    tft.drawString("No active reservation", 40, 60, 1);
+    return;
+  }
+
+  const int qrVersion = 4;
+  QRCode qrcode;
+  uint8_t qrcodeData[qrcode_getBufferSize(qrVersion)];
+  qrcode_initText(&qrcode, qrcodeData, qrVersion, ECC_LOW, activeQrToken.c_str());
+
+  const int scale = 3;
+  const int qrPixelSize = qrcode.size * scale;
+  const int offsetX = (240 - qrPixelSize) / 2;
+  const int offsetY = 20;
+
+  for (uint8_t y = 0; y < qrcode.size; y++) {
+    for (uint8_t x = 0; x < qrcode.size; x++) {
+      if (qrcode_getModule(&qrcode, x, y)) {
+        tft.fillRect(offsetX + x * scale, offsetY + y * scale, scale, scale, TFT_BLACK);
+      }
+    }
+  }
+
+  tft.drawCentreString("Scan with the Stickeep app", 120, offsetY + qrPixelSize + 6, 1);
+  tft.drawCentreString("or tap your student card", 120, offsetY + qrPixelSize + 18, 1);
+}
+
+// Briefly flashes a decline message when an NFC card doesn't match the
+// active reservation, then returns to the QR scan screen so the student
+// can try again (with their card or their phone).
+void drawNfcDeclined() {
+  tft.fillScreen(TFT_RED);
+  tft.setTextColor(TFT_WHITE, TFT_RED);
+  tft.drawCentreString("Card not recognized", 120, 55, 1);
+  tft.drawCentreString("Try again or use the app", 120, 75, 1);
+  delay(1500);
+  drawQrScreen();
+  drawTopStatusBar();
+}
+
+// Shows/clears a small warning icon in the status bar once fetches have
+// been failing repeatedly (see registerSyncFailure/Success in
+// FirebaseManager.ino), so a stale seat display doesn't go unnoticed
+// indefinitely.
+bool syncWarningActive = false;
+
+void drawSyncWarning(bool show) {
+  syncWarningActive = show;
+  tft.fillRect(130, 10, 18, 12, show ? TFT_RED : TFT_WHITE);
+  tft.setTextColor(show ? TFT_WHITE : TFT_BLACK, show ? TFT_RED : TFT_WHITE);
+  tft.drawString(show ? "!" : "", 134, 14, 1);
 }

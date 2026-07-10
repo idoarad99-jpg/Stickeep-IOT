@@ -1,19 +1,8 @@
-void connectToWiFi() {
-  Serial.print("Connecting to WiFi");
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  wifiStatusText = "OK";
-
-  Serial.println();
-  Serial.println("WiFi connected");
-}
+// connectToWiFi() now lives in WifiManager.ino — it needs to support
+// eduroam (WPA2-Enterprise) alongside plain networks and hotspots, and
+// stores whichever credentials were provisioned instead of a single
+// hardcoded network. Kept as the same function name so setup()'s
+// existing call site didn't need to change.
 
 void updateWifiStatusText()
 {

@@ -44,6 +44,7 @@ void updateReservationsFromFirebase(bool forceUpdate) {
     Serial.println(httpCode);
     Serial.println(http.getString());
     http.end();
+    registerSyncFailure();
     return;
   }
 
@@ -56,6 +57,7 @@ void updateReservationsFromFirebase(bool forceUpdate) {
     Serial.print("JSON error: ");
     Serial.println(error.c_str());
     http.end();
+    registerSyncFailure();
     return;
   }
 
@@ -74,17 +76,28 @@ void updateReservationsFromFirebase(bool forceUpdate) {
     if (date != today)
       continue;
 
+    // Skip cancelled reservations — otherwise a cancelled booking still
+    // shows this seat as reserved/occupied since only date/time overlap
+    // was checked before, never the actual status.
+    String status = fields["status"]["stringValue"].as<String>();
+    if (status == "cancelled")
+      continue;
+
     resStart[reservationCount] =
       fields["startTime"]["stringValue"].as<String>();
 
     resEnd[reservationCount] =
       fields["endTime"]["stringValue"].as<String>();
 
-    resStatus[reservationCount] =
-      fields["status"]["stringValue"].as<String>();
+    resStatus[reservationCount] = status;
 
     resStudentNumber[reservationCount] =
       fields["studentNumber"]["stringValue"].as<String>();
+
+    // Needed to render the real per-reservation QR code (see
+    // DisplayManager.ino) instead of the old static placeholder image.
+    resQrToken[reservationCount] =
+      fields["qrToken"]["stringValue"].as<String>();
 
     Serial.println("----- Reservation -----");
     Serial.print("Start: ");
@@ -106,6 +119,7 @@ void updateReservationsFromFirebase(bool forceUpdate) {
   Serial.println(reservationCount);
 
   http.end();
+  registerSyncSuccess();
 
   // בדיקה האם באמת היה שינוי בנתונים
   bool dataChanged = false;
@@ -128,4 +142,23 @@ void updateReservationsFromFirebase(bool forceUpdate) {
   if (currentState == STATE_MAIN_SCREEN && dataChanged) {
     drawMainScreenReservations();
   }
+}
+
+// Tracks repeated fetch failures so the display can warn that data is
+// stale instead of silently showing old reservations forever.
+int consecutiveSyncFailures = 0;
+const int syncFailureWarningThreshold = 5;  // ~50s at the 10s poll interval
+
+void registerSyncFailure() {
+  consecutiveSyncFailures++;
+  if (consecutiveSyncFailures == syncFailureWarningThreshold) {
+    drawSyncWarning(true);
+  }
+}
+
+void registerSyncSuccess() {
+  if (consecutiveSyncFailures >= syncFailureWarningThreshold) {
+    drawSyncWarning(false);
+  }
+  consecutiveSyncFailures = 0;
 }
