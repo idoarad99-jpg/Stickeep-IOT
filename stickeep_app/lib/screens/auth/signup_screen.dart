@@ -446,7 +446,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: _nfcController,
                       onChanged: (_) => setState(() {}),
                       decoration: const InputDecoration(
-                        hintText: 'e.g. 04:80:7D:CA:C5:78:80',
+                        hintText: 'e.g. AA:BB:CC:DD:EE:FF',
                       ),
                     ),
                     const SizedBox(height: 6),
