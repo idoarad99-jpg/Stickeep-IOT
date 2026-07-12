@@ -83,9 +83,10 @@ const char* firestoreProjectId = "stickeep";
 const char* SEAT_ID = "SEAT_T2_1";
 
 // Cloud Functions — see stickeep_app/functions/index.js. Both are gated
-// by the same shared secret; ask the app team for the deployed URLs and
-// the current key once the functions are live.
-const char* nfcConfirmFunctionUrl = "https://REGION-stickeep.cloudfunctions.net/confirmNfcArrival";
+// by the same shared secret. Deployed and live as of 2026-07-12 — ask the
+// app team for the current DEVICE_API_KEY value directly (not committed
+// here on purpose, since this file is version-controlled).
+const char* nfcConfirmFunctionUrl = "https://confirmnfcarrival-ehu6egweoa-uc.a.run.app";
 const char* deviceApiKey = "REPLACE_WITH_DEVICE_API_KEY";
 
 // NFC reader (MFRC522, SPI) — confirm these pins match the actual wiring.
