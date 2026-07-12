@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
+import 'package:stickeep_app/utils/web_nfc.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -26,6 +27,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _submitted = false;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _isScanningNfc = false;
 
   // ── Photo ─────────────────────────────────────────────────────────────────
   Uint8List? _avatarBytes;
@@ -39,6 +41,32 @@ class _SignupScreenState extends State<SignupScreen> {
     _studentIdController.dispose();
     _nfcController.dispose();
     super.dispose();
+  }
+
+  // ── NFC scan (Chrome on Android only — see lib/utils/web_nfc.dart) ────────
+
+  Future<void> _scanNfcCard() async {
+    setState(() => _isScanningNfc = true);
+    try {
+      final serial = await scanNfcCard();
+      if (!mounted) return;
+      if (serial == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No card detected — try again or enter it manually')),
+        );
+      } else {
+        setState(() => _nfcController.text = serial.toUpperCase());
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Couldn\'t read the card — check NFC is turned on, or enter the number manually'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isScanningNfc = false);
+    }
   }
 
   // ── Photo logic ───────────────────────────────────────────────────────────
@@ -449,15 +477,33 @@ class _SignupScreenState extends State<SignupScreen> {
                         hintText: 'e.g. AA:BB:CC:DD:EE:FF',
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '📱 Scan your Technion card with any NFC reader app to find this number',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                        fontStyle: FontStyle.italic,
+                    const SizedBox(height: 8),
+                    if (isWebNfcSupported)
+                      OutlinedButton.icon(
+                        onPressed: _isScanningNfc ? null : _scanNfcCard,
+                        icon: _isScanningNfc
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColors.blue,
+                                ),
+                              )
+                            : Icon(Icons.nfc, color: AppColors.blue, size: 18),
+                        label: Text(
+                          _isScanningNfc ? 'Hold your card near the phone…' : 'Tap your card instead',
+                        ),
+                      )
+                    else
+                      Text(
+                        '📱 Scan your Technion card with any NFC reader app to find this number',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 28),
 
                     // ── Create account ───────────────────────────────────────────
