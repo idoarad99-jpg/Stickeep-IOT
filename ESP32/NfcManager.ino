@@ -17,8 +17,6 @@
 //   with the TFT if it's also on SPI — check for bus conflicts with
 //   TFT_eSPI's pin config before wiring.
 
-#include <SPI.h>
-#include <MFRC522.h>
 
 MFRC522 mfrc522(NFC_SS_PIN, NFC_RST_PIN);
 

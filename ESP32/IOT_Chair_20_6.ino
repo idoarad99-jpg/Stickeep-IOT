@@ -8,7 +8,8 @@
 #include "time.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <qrcode.h>  // "QRCode" by Richard Moore — Library Manager search "QRCode"
+#include <MFRC522.h>  // must be included in the main sketch file, not just NfcManager.ino — Arduino's auto-generated cross-file prototypes get hoisted above per-file includes otherwise
+#include "StickeepQrGen.h"  // vendored copy of "QRCode" by Richard Moore, renamed to avoid colliding with ESP32 core's own qrcode.h
 
 #include "Main_screen135x240.h"
 #include "Thank_you.h"
