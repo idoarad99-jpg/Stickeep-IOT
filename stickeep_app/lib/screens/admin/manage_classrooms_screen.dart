@@ -303,7 +303,7 @@ class _ManageClassroomsScreenState extends State<ManageClassroomsScreen> {
       final value = entry.value as Map<dynamic, dynamic>;
       if (value['qr_token'] == doc.id) {
         final reservation =
-            Reservation.fromJson(entry.key.toString(), value);
+            Reservation.fromJson(entry.key.toString(), userId, value);
         if (reservation.isUpcoming) {
           await cancelReservation(
             uid: userId,

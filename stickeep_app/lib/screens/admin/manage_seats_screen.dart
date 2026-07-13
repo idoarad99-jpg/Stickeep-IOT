@@ -241,7 +241,7 @@ class _ManageSeatsScreenState extends State<ManageSeatsScreen> {
     for (final entry in raw.entries) {
       final value = entry.value as Map<dynamic, dynamic>;
       if (value['qr_token'] == doc.id) {
-        final reservation = Reservation.fromJson(entry.key.toString(), value);
+        final reservation = Reservation.fromJson(entry.key.toString(), userId, value);
         if (reservation.isUpcoming) {
           await cancelReservation(
             uid: userId,

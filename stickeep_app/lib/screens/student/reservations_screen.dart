@@ -117,7 +117,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
 
                 final all = raw.entries
                     .map((e) => Reservation.fromJson(
-                        e.key.toString(), e.value as Map<dynamic, dynamic>))
+                        e.key.toString(), uid, e.value as Map<dynamic, dynamic>))
                     .toList();
 
                 List<Reservation> reservations;

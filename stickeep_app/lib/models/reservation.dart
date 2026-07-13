@@ -33,10 +33,10 @@ class Reservation {
     this.recurringGroupId,
   });
 
-  factory Reservation.fromJson(String id, Map<dynamic, dynamic> json) {
+  factory Reservation.fromJson(String id, String studentId, Map<dynamic, dynamic> json) {
     return Reservation(
       id: id,
-      studentId: json['student_id'] as String? ?? '',
+      studentId: studentId,
       studentNumber: json['student_number'] as String? ?? '',
       classroom: json['classroom'] as String? ?? '',
       lessonName: json['lesson_name'] as String? ?? '',

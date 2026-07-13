@@ -92,7 +92,7 @@ Future<int> cancelRecurringGroup({
   final raw = snapshot.value as Map<dynamic, dynamic>;
   final toCancel = raw.entries
       .map((e) =>
-          Reservation.fromJson(e.key.toString(), e.value as Map<dynamic, dynamic>))
+          Reservation.fromJson(e.key.toString(), uid, e.value as Map<dynamic, dynamic>))
       .where((r) => r.isUpcoming && r.recurringGroupId == recurringGroupId)
       .toList();
 

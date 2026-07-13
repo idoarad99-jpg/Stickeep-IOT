@@ -123,7 +123,7 @@ class _UserReservationsScreenState extends State<UserReservationsScreen> {
 
                 final all = raw.entries
                     .map((e) => Reservation.fromJson(
-                        e.key.toString(), e.value as Map<dynamic, dynamic>))
+                        e.key.toString(), widget.uid, e.value as Map<dynamic, dynamic>))
                     .toList();
 
                 final filtered = all.where((r) {
