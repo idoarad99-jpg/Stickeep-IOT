@@ -51,14 +51,15 @@ int timeToMinutes(String timeStr);
 
 TFT_eSPI tft = TFT_eSPI();
 
-// WiFi — credentials are no longer hardcoded here. See WifiManager.ino:
-// the device is provisioned via its own captive-portal setup page
-// (supports plain WPA2-PSK for hotspot/home WiFi, and WPA2-Enterprise for
-// eduroam), with credentials stored in flash. Hold WIFI_RESET_PIN low at
-// boot to re-enter provisioning (e.g. after moving the device).
+// WiFi — currently hardcoded in WifiManager.ino (HARDCODED_WIFI_SSID/
+// PASSWORD) rather than provisioned via captive portal. The portal code
+// (startProvisioningPortal() etc.) is still there but not called from
+// connectToWiFi() right now — the portal wasn't showing up reliably
+// during hardware testing, so this was reverted to a fixed network as a
+// stopgap. WIFI_RESET_PIN is unused while that's the case.
 String wifiStatusText = "Off";
 String previousWifiStatusText = "";
-const int WIFI_RESET_PIN = -1;  // set to a real GPIO once a reset button is wired; -1 disables this
+const int WIFI_RESET_PIN = -1;  // unused (see note above); would need a real GPIO if provisioning is re-enabled
 
 // WiFi provisioning state (see WifiManager.ino). Declared here, not
 // there, since setup()/loop() in this file reference them and Arduino
@@ -98,7 +99,9 @@ const int NFC_SCL_PIN = 22;
 // Chair serial
 String seatSerialNumber = "";
 
-// Button
+// Button — local-only manual override (see StateManager.ino), doesn't
+// confirm arrival server-side. GPIO 15 is free on the TTGO T-Display
+// (no conflict with the display's fixed pins or the PN532 I2C pins).
 const int qrButtonPin = 15;
 
 // States
