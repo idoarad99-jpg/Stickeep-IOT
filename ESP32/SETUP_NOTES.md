@@ -3,29 +3,41 @@
 What changed and why is explained in the code comments, but here's what
 you actually need to do before this compiles and runs correctly.
 
-## 1. Install two new libraries
+## 1. Install one library (down from two)
 
 Via Arduino IDE Library Manager:
-- **"QRCode" by Richard Moore** — generates the real per-reservation QR
-  code now shown in `STATE_QR_SCAN` (replaces the old static image).
 - **"MFRC522" by GithubCommunity / miguelbalboa** — reads NFC cards for
   the tap-to-confirm arrival path.
+
+The QR-generation code ("QRCode" by Richard Moore) is now **vendored
+directly in this folder** as `StickeepQrGen.h`/`StickeepQrGen.c` — you
+don't need to install it separately. This was deliberate: the ESP32
+Arduino core ships its own, completely different `qrcode.h` (for
+Espressif's WiFi-provisioning feature) with the exact same filename,
+and it was silently winning over the real library when both were
+installed — this actually failed to compile until fixed. Renaming and
+vendoring the real one avoids that collision for good, on any machine.
 
 Everything else (WiFi provisioning) uses only libraries already built
 into the ESP32 Arduino core (`WiFi`, `WebServer`, `DNSServer`,
 `Preferences`, `esp_wpa2.h`) — nothing extra to install for that part.
 
+**This has now actually been compiled successfully** (not just read) —
+confirmed with a real ESP32 toolchain, zero errors. Flash usage is at
+95% for this variant, so there isn't much room left before hitting the
+1.3MB limit if more gets added — worth knowing if the next feature is
+sizeable.
+
 ## 2. Fill in two config values (`IOT_Chair_20_6.ino`)
 
 ```cpp
-const char* nfcConfirmFunctionUrl = "https://REGION-stickeep.cloudfunctions.net/confirmNfcArrival";
+const char* nfcConfirmFunctionUrl = "https://confirmnfcarrival-ehu6egweoa-uc.a.run.app";
 const char* deviceApiKey = "REPLACE_WITH_DEVICE_API_KEY";
 ```
 
-These are placeholders. Ask the app team for the real deployed function
-URL and the current secret key once `confirmNfcArrival` is live — it
-isn't yet (needs a Firebase plan upgrade + Node.js on their end, not
-blocking you from building/testing everything else in the meantime).
+The function URL is already filled in and live. Ask the app team for
+the current secret key value directly (not committed here on purpose,
+since this file is version-controlled).
 
 ## 3. Confirm the NFC reader pins match your actual wiring
 
