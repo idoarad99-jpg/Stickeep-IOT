@@ -99,6 +99,11 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
     if (confirmed != true) return;
 
     try {
+      // Mirroring into RTDB (admins/{uid}, checked by the reservations/{uid}
+      // read rule since RTDB rules can't read Firestore) is handled
+      // server-side by the mirrorAdminRole Cloud Function trigger, not
+      // here — a client-side write would fail anyway under the RTDB rule,
+      // which requires already being an admin to write that node.
       await _firestore
           .collection('students')
           .doc(docId)

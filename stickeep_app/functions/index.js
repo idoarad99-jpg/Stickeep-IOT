@@ -1,4 +1,5 @@
 const { onRequest } = require('firebase-functions/v2/https');
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 
@@ -210,3 +211,41 @@ async function markNfcStatus(reservationId, status, knownUid) {
     await rtdb.ref(`reservations/${uid}/${matchKey}`).update({ nfc_status: status });
   }
 }
+
+// RTDB rules (database.rules.json) can't read Firestore, so the
+// reservations/{uid} admin-read rule checks an `admins/{uid}` mirror in
+// RTDB instead of the `role` field on the Firestore students/{uid} doc.
+// This trigger keeps that mirror in sync automatically whenever a
+// student's role changes (see all_users_screen.dart's "Make Admin").
+exports.mirrorAdminRole = onDocumentWritten('students/{uid}', async (event) => {
+  const uid = event.params.uid;
+  const isAdmin = event.data?.after?.data()?.role === 'admin';
+  if (isAdmin) {
+    await rtdb.ref(`admins/${uid}`).set(true);
+  } else {
+    await rtdb.ref(`admins/${uid}`).remove();
+  }
+});
+
+/**
+ * One-time backfill for admins that were promoted before mirrorAdminRole
+ * existed (the trigger above only fires on new writes). Gated by the same
+ * DEVICE_API_KEY secret as the hardware endpoints, purely so this isn't a
+ * fully open endpoint — not meant to be called by the ESP32.
+ * Safe to call more than once; safe to delete this function after use.
+ */
+exports.backfillAdminMirror = onRequest(
+  { secrets: [DEVICE_API_KEY], cors: false },
+  async (req, res) => {
+    const providedKey = req.get('x-device-key');
+    if (!providedKey || providedKey !== DEVICE_API_KEY.value()) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const snap = await db.collection('students').where('role', '==', 'admin').get();
+    const uids = snap.docs.map((doc) => doc.id);
+    await Promise.all(uids.map((uid) => rtdb.ref(`admins/${uid}`).set(true)));
+    res.status(200).json({ mirrored: uids });
+  }
+);
