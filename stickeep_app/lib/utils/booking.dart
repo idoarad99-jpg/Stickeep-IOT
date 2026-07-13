@@ -91,6 +91,7 @@ Future<BookingResult> createReservation({
     'seatId': seatId,
     'createdAt': FieldValue.serverTimestamp(),
     'qrToken': firestoreRef.id,
+    if (nfcSerialNumber != null) 'nfcSerialNumber': nfcSerialNumber,
     if (recurringGroupId != null) 'recurringGroupId': recurringGroupId,
   });
 
@@ -118,6 +119,7 @@ Future<BookingResult> createReservation({
     'status': 'reserved',
     'createdAt': FieldValue.serverTimestamp(),
     'qrToken': firestoreRef.id,
+    if (nfcSerialNumber != null) 'nfcSerialNumber': nfcSerialNumber,
   });
 
   return BookingResult(
