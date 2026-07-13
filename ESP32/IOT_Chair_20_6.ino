@@ -78,10 +78,6 @@ const int NET_TYPE_ENTERPRISE = 2;
 String currentDateText = "";
 String currentTimeText = "";
 
-//Batrry State
-String batteryText = "--%";
-String previousBatteryText = "";
-
 // Firebase
 const char* firestoreProjectId = "stickeep";
 const char* SEAT_ID = "SEAT_T2_1";
@@ -179,7 +175,6 @@ void loop() {
   if (wifiProvisioningActive) return;
 
   updateWifiStatusText();
-  updateBatteryStatus();
   updateDateTime();
 
   updateReservationsFromFirebase(false);

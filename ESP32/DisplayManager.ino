@@ -40,10 +40,6 @@ void drawTopStatusBar() {
   tft.fillRect(108, 10, 18, 12, TFT_WHITE);
   tft.drawString(seatSerialNumber, 108, 14, 1);
 
-  // Battery
-tft.fillRect(150, 10, 18, 12, TFT_WHITE);
-tft.drawString(batteryText, 152, 14, 1);
-
   drawDateTimeStatus();
 }
 
