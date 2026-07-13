@@ -35,29 +35,33 @@ void handleProvisioningRoot();
 void handleProvisioningSave();
 bool tryConnectWithStoredCredentials(unsigned long timeoutMs);
 
+// Temporary reversion to hardcoded WiFi credentials: the captive-portal
+// provisioning flow wasn't showing up reliably during hardware testing
+// (time-constrained ahead of submission), so connectToWiFi() connects
+// directly to a fixed network instead of starting the "Stickeep-Setup"
+// AP. Fill in the real network name/password below before flashing.
+const char* HARDCODED_WIFI_SSID = "REPLACE_WITH_SSID";
+const char* HARDCODED_WIFI_PASSWORD = "REPLACE_WITH_PASSWORD";
+
 void connectToWiFi() {
   WiFi.mode(WIFI_STA);
 
-  int netType = wifiPrefs.getInt("netType", NET_TYPE_NONE);
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(HARDCODED_WIFI_SSID, HARDCODED_WIFI_PASSWORD);
 
-  bool holdingResetButton =
-      (WIFI_RESET_PIN >= 0) && (digitalRead(WIFI_RESET_PIN) == LOW);
-
-  if (netType == NET_TYPE_NONE || holdingResetButton) {
-    Serial.println(holdingResetButton
-                        ? "WiFi reset button held — entering provisioning"
-                        : "No stored WiFi credentials — entering provisioning");
-    startProvisioningPortal();
-    return;
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 20000) {
+    delay(300);
+    Serial.print(".");
   }
+  Serial.println();
 
-  Serial.println("Connecting to stored WiFi network...");
-  if (tryConnectWithStoredCredentials(20000)) {
+  if (WiFi.status() == WL_CONNECTED) {
     wifiStatusText = "OK";
     Serial.println("WiFi connected");
   } else {
-    Serial.println("Failed to connect with stored credentials — entering provisioning");
-    startProvisioningPortal();
+    Serial.println("Failed to connect to WiFi — will keep retrying in the background");
+    wifiStatusText = "Off";
   }
 }
 
@@ -112,7 +116,7 @@ void maintainWifiConnection() {
   lastReconnectAttempt = now;
 
   Serial.println("WiFi disconnected — attempting reconnect...");
-  tryConnectWithStoredCredentials(8000);
+  WiFi.begin(HARDCODED_WIFI_SSID, HARDCODED_WIFI_PASSWORD);
 }
 
 // ---- Captive portal ----
