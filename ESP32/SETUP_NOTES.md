@@ -3,13 +3,35 @@
 What changed and why is explained in the code comments, but here's what
 you actually need to do before this compiles and runs correctly.
 
-## 1. Install one library (down from two)
+## 0. Hardware: ESP32 TTGO T-Display + PN532
+
+This firmware now targets the **ESP32 TTGO T-Display** board (built-in
+135x240 ST7789 screen) with a **PN532** NFC reader over **I2C** — this
+supersedes both the older MFRC522/SPI wiring and the separate
+`ESP32_OLED_PN532/` sketch, which are no longer the active target.
+
+The TTGO's screen pins are soldered/fixed and can't be reused for
+anything else: GPIO 4, 5, 16, 18, 19, 23 (see `TftSetupTTGO.h`). The
+PN532 only needs two free GPIOs for I2C:
+
+| PN532 pin | ESP32 TTGO GPIO |
+|---|---|
+| SDA | 21 |
+| SCL | 22 |
+| VCC | 3.3V |
+| GND | GND |
+
+## 1. Install the libraries
 
 Via Arduino IDE Library Manager:
-- **"MFRC522" by GithubCommunity / miguelbalboa** — reads NFC cards for
-  the tap-to-confirm arrival path.
+- **"PN532" by elechouse** — *not* in the standard Library Manager
+  index; install by cloning `https://github.com/elechouse/PN532` and
+  copying its `PN532/`, `PN532_I2C/`, and `NDEF/` subfolders (flattened,
+  not nested) into your Arduino `libraries/` folder. This is the same
+  library Talia's original NFC code used, kept intentionally since it
+  was already proven working.
 
-The QR-generation code ("QRCode" by Richard Moore) is now **vendored
+The QR-generation code ("QRCode" by Richard Moore) is **vendored
 directly in this folder** as `StickeepQrGen.h`/`StickeepQrGen.c` — you
 don't need to install it separately. This was deliberate: the ESP32
 Arduino core ships its own, completely different `qrcode.h` (for
@@ -24,9 +46,10 @@ into the ESP32 Arduino core (`WiFi`, `WebServer`, `DNSServer`,
 
 **This has now actually been compiled successfully** (not just read) —
 confirmed with a real ESP32 toolchain, zero errors. Flash usage is at
-95% for this variant, so there isn't much room left before hitting the
-1.3MB limit if more gets added — worth knowing if the next feature is
-sizeable.
+97% for this variant (TFT_eSPI + PN532/I2C together are heavier than
+the previous MFRC522/SPI combination), so there's very little room left
+before hitting the 1.3MB limit — worth flagging before adding anything
+else non-trivial.
 
 ## 2. Fill in two config values (`IOT_Chair_20_6.ino`)
 
@@ -39,19 +62,16 @@ The function URL is already filled in and live. Ask the app team for
 the current secret key value directly (not committed here on purpose,
 since this file is version-controlled).
 
-## 3. Confirm the NFC reader pins match your actual wiring
+## 3. NFC reader pins are already set for this board
 
 ```cpp
-const int NFC_SS_PIN = 5;
-const int NFC_RST_PIN = 27;
+const int NFC_SDA_PIN = 21;
+const int NFC_SCL_PIN = 22;
 ```
 
-These are placeholders too — pick real GPIOs based on how you wire the
-MFRC522, and **double-check they don't conflict with the TFT display's
-SPI pins** (configured separately in TFT_eSPI's `User_Setup.h`, not in
-this sketch — I don't have visibility into that file). The MFRC522 can
-share the same SPI bus as the display (different SS/CS pins), but if
-anything else is already using GPIO 5 or 27, change these.
+These match the TTGO T-Display's free GPIOs and don't conflict with the
+screen's fixed pins (see section 0 above) — no changes needed unless you
+wire the PN532 differently.
 
 ## 4. WiFi setup no longer uses hardcoded credentials
 

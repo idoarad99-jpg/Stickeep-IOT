@@ -1,3 +1,4 @@
+#include "TftSetupTTGO.h"  // must come before <TFT_eSPI.h> — fixed pinout for the TTGO T-Display's built-in screen
 #include <SPI.h>
 #include <TFT_eSPI.h>
 #include <JPEGDecoder.h>
@@ -8,7 +9,9 @@
 #include "time.h"
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
-#include <MFRC522.h>  // must be included in the main sketch file, not just NfcManager.ino — Arduino's auto-generated cross-file prototypes get hoisted above per-file includes otherwise
+#include <Wire.h>
+#include <PN532_I2C.h>
+#include <PN532.h>  // must be included in the main sketch file, not just NfcManager.ino — Arduino's auto-generated cross-file prototypes get hoisted above per-file includes otherwise
 #include "StickeepQrGen.h"  // vendored copy of "QRCode" by Richard Moore, renamed to avoid colliding with ESP32 core's own qrcode.h
 
 #include "Main_screen135x240.h"
@@ -90,9 +93,11 @@ const char* SEAT_ID = "SEAT_T2_1";
 const char* nfcConfirmFunctionUrl = "https://confirmnfcarrival-ehu6egweoa-uc.a.run.app";
 const char* deviceApiKey = "REPLACE_WITH_DEVICE_API_KEY";
 
-// NFC reader (MFRC522, SPI) — confirm these pins match the actual wiring.
-const int NFC_SS_PIN = 5;
-const int NFC_RST_PIN = 27;
+// NFC reader (PN532, I2C). GPIO 21/22 are the ESP32's standard I2C pins
+// and are free on the TTGO T-Display — GPIO 4, 5, 16, 18, 19, 23 are
+// permanently taken by the board's built-in screen, don't reuse them.
+const int NFC_SDA_PIN = 21;
+const int NFC_SCL_PIN = 22;
 
 // Chair serial
 String seatSerialNumber = "";
