@@ -26,10 +26,12 @@ PN532 only needs two free GPIOs for I2C:
 Via Arduino IDE Library Manager:
 - **"PN532" by elechouse** — *not* in the standard Library Manager
   index; install by cloning `https://github.com/elechouse/PN532` and
-  copying its `PN532/`, `PN532_I2C/`, and `NDEF/` subfolders (flattened,
-  not nested) into your Arduino `libraries/` folder. This is the same
+  copying its `PN532/` and `PN532_I2C/` subfolders (flattened, not
+  nested) into your Arduino `libraries/` folder. This is the same
   library Talia's original NFC code used, kept intentionally since it
-  was already proven working.
+  was already proven working. (The repo's `NDEF/` folder is *not*
+  needed — that's only for writing/reading NDEF-formatted tag data,
+  which this firmware doesn't do; we only read the raw card UID.)
 
 The QR-generation code ("QRCode" by Richard Moore) is **vendored
 directly in this folder** as `StickeepQrGen.h`/`StickeepQrGen.c` — you
