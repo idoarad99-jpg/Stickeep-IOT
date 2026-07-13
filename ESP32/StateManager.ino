@@ -43,6 +43,20 @@ void updateStateMachine() {
       thankYouStartTime = millis();
 
       delay(250);
+      return;
+    }
+
+    // The student may have confirmed arrival remotely by scanning the
+    // displayed QR code with their phone (scanner_screen.dart) instead
+    // of tapping a card here — updateReservationsFromFirebase() keeps
+    // resStatus[] fresh every ~10s even while parked on this screen, so
+    // check it instead of waiting only on tryReadNfcCard()/the button.
+    for (int i = 0; i < reservationCount; i++) {
+      if (resQrToken[i] == activeQrToken && resStatus[i] == "occupied") {
+        currentState = STATE_THANK_YOU;
+        thankYouStartTime = millis();
+        break;
+      }
     }
     return;
   }
