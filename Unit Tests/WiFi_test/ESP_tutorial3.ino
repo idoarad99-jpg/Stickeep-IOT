@@ -3,8 +3,8 @@
 #define yellowLedPin 15   // Yellow LED - reserved
 #define blueLedPin 22     // Blue LED - available / waiting
 
-const char* ssid = "Thalia g";
-const char* password = "xxxxx";
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
 
 WiFiServer server(80);
 

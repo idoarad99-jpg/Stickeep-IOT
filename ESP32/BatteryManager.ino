@@ -4,11 +4,8 @@
 
 int getBatteryPercentage()
 {
-  // כרגע אין סוללה, לכן מחזירים ערך לבדיקה
+  // No real battery sensor wired up yet — fixed placeholder value.
   return 100;
-
-  // בהמשך:
-  // return calculateBatteryPercent();
 }
 
 void updateBatteryStatus()
