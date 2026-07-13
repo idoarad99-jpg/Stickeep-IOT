@@ -70,6 +70,8 @@ Future<BookingResult> createReservation({
     'student_number': studentNumber,
     'seat_id': seatId,
     'qr_token': firestoreRef.id,
+    'qr_status': '',
+    'nfc_status': '',
     'is_upcoming': true,
     'created_at': DateTime.now().toIso8601String(),
     'sort_key': int.parse(
