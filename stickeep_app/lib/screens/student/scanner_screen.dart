@@ -53,7 +53,13 @@ class _ScannerScreenState extends State<ScannerScreen>
   @override
   void initState() {
     super.initState();
-    _cameraController = MobileScannerController();
+    // Explicit resolution — without this, the web camera stream defaults
+    // to a low resolution (e.g. 640x480) that gets stretched to fill the
+    // preview box, making the QR scan look blurry regardless of the
+    // phone's actual camera quality.
+    _cameraController = MobileScannerController(
+      cameraResolution: const Size(1280, 720),
+    );
     _controller = AnimationController(vsync: this, duration: _scanDuration)
       ..repeat(reverse: true);
     _buildAnimations();
