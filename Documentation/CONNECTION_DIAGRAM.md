@@ -58,6 +58,30 @@ None of these can be reused for anything else on this board.
 |---|---|---|
 | `qrButtonPin` | 15 | Local-only manual override to simulate a QR scan during testing/demo — does **not** confirm arrival server-side, purely cosmetic for the demo. Free GPIO, no conflict with the screen or I2C pins. |
 | `WIFI_RESET_PIN` | -1 (disabled) | Reserved for a future physical WiFi-reset button; not wired, not currently used (WiFi is set via hardcoded credentials, see `WifiManager.ino`). |
+| `LED_R_PIN` / `LED_G_PIN` / `LED_B_PIN` | 25 / 26 / 27 | Status LED — see below. |
+
+## Status LED (common-anode RGB, 3 pins)
+
+A discrete 4-leg RGB LED (**not** an addressable WS2812/SK6812 — no
+data protocol, just three PWM brightness channels), wired common-anode:
+
+| LED pin | ESP32 GPIO |
+|---|---|
+| COM (longest leg) | 5V |
+| R | GPIO 25 (through its inline current-limiting resistor) |
+| G | GPIO 26 (through its inline current-limiting resistor) |
+| B | GPIO 27 (through its inline current-limiting resistor) |
+
+Because this is **common anode**, each color pin is active-LOW — a
+lower PWM value is brighter. `LedManager.ino`'s `setLedColor()` inverts
+this internally so the rest of the firmware can think in normal
+(higher = brighter) terms.
+
+Color meaning: solid blue = free, blinking blue = reservation
+upcoming/awaiting arrival, green flash = arrival confirmed, red blink =
+NFC card didn't match, solid red (highest priority) = WiFi/communication
+fault. A wrong **QR** scan can't be shown here — that mismatch happens
+entirely in the phone app and never reaches the device.
 
 ## Power
 
