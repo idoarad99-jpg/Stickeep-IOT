@@ -204,7 +204,18 @@ void drawNfcDeclined() {
   tft.setTextColor(TFT_WHITE, TFT_RED);
   tft.drawCentreString("Card not recognized", 120, 55, 1);
   tft.drawCentreString("Try again or use the app", 120, 75, 1);
-  delay(1500);
+
+  // A plain delay(1500) here would block the whole loop() for the
+  // entire decline window, so updateLedState() would never run again
+  // until after the LED event had already silently expired — the red
+  // blink would never actually appear. Calling it periodically during
+  // the wait keeps the LED blinking in sync with this screen.
+  unsigned long waitStart = millis();
+  while (millis() - waitStart < 1500) {
+    updateLedState();
+    delay(50);
+  }
+
   drawQrScreen();
   drawTopStatusBar();
 }
