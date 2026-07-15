@@ -27,10 +27,12 @@ void updateStateMachine() {
       if (confirmNfcArrival(cardId)) {
         currentState = STATE_THANK_YOU;
         thankYouStartTime = millis();
+        triggerLedSuccess();
       } else {
         // Card didn't match (or the request failed) — briefly show a
         // decline indicator, then keep waiting on this screen so the
         // student can try again (e.g. with their phone instead).
+        triggerLedDecline();
         drawNfcDeclined();
       }
       return;
@@ -41,6 +43,7 @@ void updateStateMachine() {
 
       currentState = STATE_THANK_YOU;
       thankYouStartTime = millis();
+      triggerLedSuccess();
 
       delay(250);
       return;
@@ -55,6 +58,7 @@ void updateStateMachine() {
       if (resQrToken[i] == activeQrToken && resStatus[i] == "occupied") {
         currentState = STATE_THANK_YOU;
         thankYouStartTime = millis();
+        triggerLedSuccess();
         break;
       }
     }

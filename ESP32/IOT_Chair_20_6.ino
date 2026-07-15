@@ -12,6 +12,7 @@
 #include <Wire.h>
 #include <PN532_I2C.h>
 #include <PN532.h>  // must be included in the main sketch file, not just NfcManager.ino — Arduino's auto-generated cross-file prototypes get hoisted above per-file includes otherwise
+#include <Adafruit_NeoPixel.h>
 #include "StickeepQrGen.h"  // vendored copy of "QRCode" by Richard Moore, renamed to avoid colliding with ESP32 core's own qrcode.h
 
 #include "Main_screen135x240.h"
@@ -42,6 +43,11 @@ void drawDateTimeStatus();
 void setupNfc();
 bool tryReadNfcCard(String &cardIdOut);
 bool confirmNfcArrival(String cardId);
+
+void setupLed();
+void updateLedState();
+void triggerLedSuccess();
+void triggerLedDecline();
 
 int getCurrentMinutes();
 String getTodayDateString();
@@ -162,6 +168,7 @@ void setup() {
   initTime();
 
   setupNfc();
+  setupLed();
 
   updateReservationsFromFirebase(true);
   updateScreen();
@@ -183,6 +190,7 @@ void loop() {
   updateReservationsFromFirebase(false);
 
   updateStateMachine();
+  updateLedState();
 
   if (currentState != previousState) {
     updateScreen();
