@@ -23,10 +23,17 @@ LedEvent ledEvent = LED_EVENT_NONE;
 unsigned long ledEventStart = 0;
 const unsigned long ledEventDuration = 1500;  // matches drawNfcDeclined()'s on-screen duration
 
+// Only call statusLed.show() when the color actually changes — it briefly
+// disables interrupts to bit-bang precise timing to the LED, and doing
+// that on every single loop() iteration (rather than only on an actual
+// change) was found to disrupt the PN532's I2C reads.
+uint32_t lastAppliedColor = 0xFFFFFFFF;  // sentinel that never matches a real color
+
 void setupLed() {
   statusLed.begin();
   statusLed.setBrightness(80);
   statusLed.show();  // off until the first updateLedState()
+  Serial.println("Status LED initialized (GPIO25)");
 }
 
 void triggerLedSuccess() {
@@ -39,16 +46,23 @@ void triggerLedDecline() {
   ledEventStart = millis();
 }
 
-// Called every loop() iteration. Cheap — just sets one pixel's color,
-// with blinking handled by toggling on/off every 400ms using millis().
+void applyLedColor(uint32_t color) {
+  if (color == lastAppliedColor) return;
+  lastAppliedColor = color;
+  statusLed.setPixelColor(0, color);
+  statusLed.show();
+}
+
+// Called every loop() iteration, but only actually writes to the LED
+// when the target color changes (see applyLedColor) — cheap to call
+// often, doesn't interfere with I2C.
 void updateLedState() {
   bool blinkOn = (millis() / 400) % 2 == 0;
 
   // WiFi/communication fault takes priority over everything else — it's
   // an ongoing condition, not a one-off event.
   if (WiFi.status() != WL_CONNECTED) {
-    statusLed.setPixelColor(0, statusLed.Color(255, 0, 0));
-    statusLed.show();
+    applyLedColor(statusLed.Color(255, 0, 0));
     return;
   }
 
@@ -57,29 +71,27 @@ void updateLedState() {
       ledEvent = LED_EVENT_NONE;
     } else {
       if (ledEvent == LED_EVENT_SUCCESS) {
-        statusLed.setPixelColor(0, statusLed.Color(0, 255, 0));
+        applyLedColor(statusLed.Color(0, 255, 0));
       } else {
         // Decline blinks red instead of staying solid, so it reads as a
         // brief alert rather than the same steady red as a WiFi fault.
-        statusLed.setPixelColor(0, blinkOn ? statusLed.Color(255, 0, 0) : 0);
+        applyLedColor(blinkOn ? statusLed.Color(255, 0, 0) : 0);
       }
-      statusLed.show();
       return;
     }
   }
 
   switch (currentState) {
     case STATE_MAIN_SCREEN:
-      statusLed.setPixelColor(0, statusLed.Color(0, 0, 255));  // free — solid blue
+      applyLedColor(statusLed.Color(0, 0, 255));  // free — solid blue
       break;
     case STATE_QR_SCAN:
       // Reservation upcoming/active, awaiting arrival — blinking blue
-      statusLed.setPixelColor(0, blinkOn ? statusLed.Color(0, 0, 255) : 0);
+      applyLedColor(blinkOn ? statusLed.Color(0, 0, 255) : 0);
       break;
     case STATE_THANK_YOU:
     case STATE_RESERVED:
-      statusLed.setPixelColor(0, statusLed.Color(255, 150, 0));  // occupied — solid yellow
+      applyLedColor(statusLed.Color(255, 150, 0));  // occupied — solid yellow
       break;
   }
-  statusLed.show();
 }

@@ -42,10 +42,13 @@ void setupNfc() {
   uint32_t versiondata = nfc.getFirmwareVersion();
 
   if (!versiondata) {
-    Serial.println("PN532 not detected");
+    Serial.println("PN532 not detected (getFirmwareVersion returned 0) — check wiring/power");
     pn532Ready = false;
     return;
   }
+
+  Serial.print("PN532 found, firmware version: 0x");
+  Serial.println(versiondata, HEX);
 
   nfc.SAMConfig();
   pn532Ready = true;
