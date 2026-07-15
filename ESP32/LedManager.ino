@@ -29,7 +29,8 @@ const int LED_B_PIN = 27;
 enum LedEvent { LED_EVENT_NONE, LED_EVENT_SUCCESS, LED_EVENT_DECLINE };
 LedEvent ledEvent = LED_EVENT_NONE;
 unsigned long ledEventStart = 0;
-const unsigned long ledEventDuration = 1500;  // matches drawNfcDeclined()'s on-screen duration
+const unsigned long ledSuccessDuration = 3000;
+const unsigned long ledDeclineDuration = 1500;  // matches drawNfcDeclined()'s on-screen duration
 
 // Only rewrite the PWM duty cycles when the color actually changes.
 int lastR = -1, lastG = -1, lastB = -1;
@@ -79,11 +80,15 @@ void updateLedState() {
   }
 
   if (ledEvent != LED_EVENT_NONE) {
-    if (millis() - ledEventStart >= ledEventDuration) {
+    unsigned long eventDuration =
+        ledEvent == LED_EVENT_SUCCESS ? ledSuccessDuration : ledDeclineDuration;
+
+    if (millis() - ledEventStart >= eventDuration) {
       ledEvent = LED_EVENT_NONE;
     } else {
       if (ledEvent == LED_EVENT_SUCCESS) {
-        setLedColor(0, 255, 0);
+        // Blinking green — arrival confirmed (card or QR matched)
+        setLedColor(0, blinkOn ? 255 : 0, 0);
       } else {
         // Decline blinks red instead of staying solid, so it reads as a
         // brief alert rather than the same steady red as a WiFi fault.
@@ -95,7 +100,7 @@ void updateLedState() {
 
   switch (currentState) {
     case STATE_MAIN_SCREEN:
-      setLedColor(0, 0, 255);  // free — solid blue
+      setLedColor(0, 255, 0);  // free — solid green
       break;
     case STATE_QR_SCAN:
       // Reservation upcoming/active, awaiting arrival — blinking blue
@@ -103,7 +108,7 @@ void updateLedState() {
       break;
     case STATE_THANK_YOU:
     case STATE_RESERVED:
-      setLedColor(255, 150, 0);  // occupied — solid yellow
+      setLedColor(0, 0, 255);  // occupied — solid blue
       break;
   }
 }

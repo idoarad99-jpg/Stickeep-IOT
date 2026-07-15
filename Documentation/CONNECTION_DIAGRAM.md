@@ -77,11 +77,12 @@ lower PWM value is brighter. `LedManager.ino`'s `setLedColor()` inverts
 this internally so the rest of the firmware can think in normal
 (higher = brighter) terms.
 
-Color meaning: solid blue = free, blinking blue = reservation
-upcoming/awaiting arrival, green flash = arrival confirmed, red blink =
-NFC card didn't match, solid red (highest priority) = WiFi/communication
-fault. A wrong **QR** scan can't be shown here — that mismatch happens
-entirely in the phone app and never reaches the device.
+Color meaning: solid green = free, blinking blue = reservation
+upcoming/awaiting arrival, blinking green (3s) = arrival confirmed,
+solid blue = occupied, red blink = NFC card didn't match, solid red
+(highest priority) = WiFi/communication fault. A wrong **QR** scan
+can't be shown here — that mismatch happens entirely in the phone app
+and never reaches the device.
 
 ## Power
 
