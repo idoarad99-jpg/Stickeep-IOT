@@ -21,6 +21,25 @@ PN532 only needs two free GPIOs for I2C:
 | VCC | 3.3V |
 | GND | GND |
 
+There's also a status LED — a plain 4-leg **common-anode RGB LED** (not
+an addressable WS2812/SK6812 — three separate PWM pins, not a data
+line):
+
+| LED pin | ESP32 TTGO GPIO |
+|---|---|
+| COM (longest leg) | 5V |
+| R | 25 |
+| G | 26 |
+| B | 27 |
+
+Color meaning: solid green = free, blinking blue = reservation
+upcoming/awaiting arrival (within 15 min of start), blinking green (3s)
+= arrival confirmed, solid blue = occupied, blinking red = NFC card
+didn't match, solid red (highest priority, overrides everything) =
+WiFi/communication fault. A wrong **QR** scan can't be shown here —
+that mismatch happens entirely in the phone app and never reaches the
+device. See `LedManager.ino`.
+
 ## 1. Install the libraries
 
 Via Arduino IDE Library Manager:
@@ -48,10 +67,9 @@ into the ESP32 Arduino core (`WiFi`, `WebServer`, `DNSServer`,
 
 **This has now actually been compiled successfully** (not just read) —
 confirmed with a real ESP32 toolchain, zero errors. Flash usage is at
-97% for this variant (TFT_eSPI + PN532/I2C together are heavier than
-the previous MFRC522/SPI combination), so there's very little room left
-before hitting the 1.3MB limit — worth flagging before adding anything
-else non-trivial.
+94% for this variant, so there's still very little room left before
+hitting the 1.3MB limit — worth flagging before adding anything else
+non-trivial.
 
 ## 2. Fill in two config values (`IOT_Chair_20_6.ino`)
 
@@ -75,36 +93,45 @@ These match the TTGO T-Display's free GPIOs and don't conflict with the
 screen's fixed pins (see section 0 above) — no changes needed unless you
 wire the PN532 differently.
 
-## 4. WiFi setup no longer uses hardcoded credentials
+## 4. WiFi — currently hardcoded, not the captive portal
 
-On first boot (or if the device fails to connect with previously saved
-credentials), it starts its own WiFi access point called
-**"Stickeep-Setup"**. Connect to that from a phone/laptop, then open any
-webpage (it should redirect automatically as a captive portal) — you'll
-get a simple form to enter either:
-- **Plain network** (home WiFi, phone hotspot): just SSID + password
-- **Enterprise** (eduroam): SSID + identity + username + password
+A captive-portal provisioning flow exists in `WifiManager.ino`
+(`startProvisioningPortal()` etc.) but **is not active right now** — it
+wasn't showing up reliably during hardware testing, and the course
+rules require using a phone hotspot for the live submission anyway
+(Technion WiFi isn't allowed). Instead, `connectToWiFi()` connects
+directly using two constants you need to fill in before flashing:
 
-It saves what you enter and restarts, then connects normally. If you
-ever need to re-provision (e.g. moving the device to a different
-network), there's a `WIFI_RESET_PIN` constant currently set to `-1`
-(disabled) — wire a button to a spare GPIO and set that constant to its
-pin number, then hold it during boot to force back into setup mode.
+```cpp
+const char* HARDCODED_WIFI_SSID = "REPLACE_WITH_SSID";
+const char* HARDCODED_WIFI_PASSWORD = "REPLACE_WITH_PASSWORD";
+```
+
+Set these to the hotspot you'll actually use at submission time, and
+test that exact combination in advance — don't rely on it working just
+because it worked on a different WiFi network in the lab.
+
+`WIFI_RESET_PIN` (currently `-1`, disabled) is unused while this is the
+case — it only matters if the captive portal is re-enabled later.
 
 ## 5. Test plan, roughly in order
 
-1. Flash and confirm it still boots and shows the main screen normally.
-2. Confirm WiFi provisioning works (try both a plain network and, once
-   you have credentials, eduroam).
+1. Flash and confirm it still boots and shows the main screen normally
+   (LED should be solid green — free).
+2. Confirm it connects using the hardcoded WiFi credentials (section 4).
 3. Book a test reservation in the app for this seat, right now, and
    confirm the seat shows "reserved" and displays a real QR code (not
-   the old placeholder) — scan it with the app to confirm arrival works.
+   the old placeholder) — LED should switch to blinking blue. Scan the
+   QR with the app to confirm arrival works — LED should flash green
+   (3s), then settle on solid blue (occupied).
 4. Cancel a reservation in the app for a time slot that's still current,
    and confirm the seat correctly shows it as free (this was the P0 bug
-   we found).
-5. Once the Cloud Function is deployed and you have the real URL/key:
-   test an NFC card tap, both a matching card (should confirm arrival)
-   and a non-matching one (should show "Card not recognized" and let you
-   retry).
+   we found), LED back to solid green.
+5. Test an NFC card tap: a matching card should confirm arrival (green
+   flash, same as QR); a non-matching one should show "Card not
+   recognized" on screen **and** blink the LED red for the same 1.5s
+   window, then return to blinking blue.
 6. Kill WiFi mid-session and confirm the device reconnects on its own
-   instead of staying stuck.
+   instead of staying stuck — LED should go solid red while
+   disconnected (overrides everything else), back to normal once
+   reconnected.
