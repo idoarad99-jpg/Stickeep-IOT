@@ -67,6 +67,13 @@ class AppColors {
       ? (_isDark ? const Color(0xFFE0E0E0) : const Color(0xFF2E2E2E))
       : (_isDark ? const Color(0xFFA0A6B0) : const Color(0xFF6B7280));
 
+  // Muted white text/icons on dark or colored backgrounds (AppBar
+  // subtitles, overlay screens) — these used to be literal
+  // Colors.white70/white54, which completely ignored high-contrast mode.
+  // Use these instead of a hardcoded opacity so they actually respond.
+  static Color get whiteMuted => _highContrast ? Colors.white : Colors.white70;
+  static Color get whiteFaint => _highContrast ? Colors.white : Colors.white54;
+
   // Card/sheet background — use instead of a literal Colors.white so cards
   // adapt in dark mode.
   static Color get surface => _isDark ? const Color(0xFF1E1E1E) : Colors.white;

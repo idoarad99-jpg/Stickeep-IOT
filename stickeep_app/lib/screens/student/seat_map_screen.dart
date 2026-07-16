@@ -153,7 +153,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               '${widget.date}  •  ${widget.timeStart}–${widget.timeEnd}',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: AppColors.whiteMuted, fontSize: 13),
             ),
           ),
         ),
@@ -258,7 +258,19 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                 textColor = AppColors.green;
                               }
 
-                              return GestureDetector(
+                              final seatLabel = seat.label.isEmpty
+                                  ? 'Seat ${seat.order}'
+                                  : seat.label;
+                              final statusLabel = isTaken
+                                  ? 'taken'
+                                  : (isSelected ? 'selected' : 'free');
+
+                              return Semantics(
+                                button: !isTaken,
+                                enabled: !isTaken,
+                                selected: isSelected,
+                                label: '$seatLabel, $statusLabel',
+                                child: GestureDetector(
                                 onTap: isTaken
                                     ? null
                                     : () {
@@ -343,7 +355,7 @@ class _SeatMapScreenState extends State<SeatMapScreen> {
                                     ],
                                   ),
                                 ),
-                              );
+                              ));
                             },
                           );
                         },

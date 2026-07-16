@@ -180,7 +180,11 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                       runSpacing: 8,
                       children: fallback.map((room) {
                         final selected = _selectedClassroom?.id == room.id;
-                        return GestureDetector(
+                        return Semantics(
+                          button: true,
+                          selected: selected,
+                          label: room.displayName,
+                          child: GestureDetector(
                           onTap: () => setState(() => _selectedClassroom = room),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -202,7 +206,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                               ),
                             ),
                           ),
-                        );
+                        ));
                       }).toList(),
                     ),
                   ],
@@ -251,7 +255,11 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                       runSpacing: 8,
                       children: buildings.map((building) {
                         final selected = building == selectedBuilding;
-                        return GestureDetector(
+                        return Semantics(
+                          button: true,
+                          selected: selected,
+                          label: '$building building',
+                          child: GestureDetector(
                           onTap: () => setState(() {
                             _selectedBuilding = building;
                             _selectedClassroom = null;
@@ -277,7 +285,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                               ),
                             ),
                           ),
-                        );
+                        ));
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
@@ -289,7 +297,11 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                     runSpacing: 8,
                     children: roomsInBuilding.map((room) {
                       final selected = _selectedClassroom?.id == room.id;
-                      return GestureDetector(
+                      return Semantics(
+                        button: true,
+                        selected: selected,
+                        label: room.roomName,
+                        child: GestureDetector(
                         onTap: () => setState(() => _selectedClassroom = room),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -310,7 +322,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                             ),
                           ),
                         ),
-                      );
+                      ));
                     }).toList(),
                   ),
                 ],
@@ -330,7 +342,12 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             // ── Date ───────────────────────────────────────────────────────
             Text('Date', style: AppTextStyles.label),
             const SizedBox(height: 8),
-            GestureDetector(
+            Semantics(
+              button: true,
+              label: _selectedDate == null
+                  ? 'Date, not selected'
+                  : 'Date, ${_formatDate(_selectedDate!)}',
+              child: GestureDetector(
               onTap: _pickDate,
               child: Container(
                 width: double.infinity,
@@ -359,7 +376,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                   ],
                 ),
               ),
-            ),
+            )),
             const SizedBox(height: 20),
 
             // ── Time ───────────────────────────────────────────────────────
@@ -368,7 +385,12 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
             Row(
               children: [
                 Expanded(
-                  child: GestureDetector(
+                  child: Semantics(
+                    button: true,
+                    label: _timeStart == null
+                        ? 'Start time, not selected'
+                        : 'Start time, ${_formatTime(_timeStart!)}',
+                    child: GestureDetector(
                     onTap: () => _pickTime(true),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -394,14 +416,19 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                         ],
                       ),
                     ),
-                  ),
+                  )),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text('→', style: TextStyle(fontSize: 18, color: AppColors.textSecondary)),
                 ),
                 Expanded(
-                  child: GestureDetector(
+                  child: Semantics(
+                    button: true,
+                    label: _timeEnd == null
+                        ? 'End time, not selected'
+                        : 'End time, ${_formatTime(_timeEnd!)}',
+                    child: GestureDetector(
                     onTap: () => _pickTime(false),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
@@ -427,7 +454,7 @@ class _ClassroomScreenState extends State<ClassroomScreen> {
                         ],
                       ),
                     ),
-                  ),
+                  )),
                 ),
               ],
             ),

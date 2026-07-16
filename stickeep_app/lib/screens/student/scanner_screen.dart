@@ -274,13 +274,13 @@ class _ScannerBox extends StatelessWidget {
           color: const Color(0xFF1A1A1A),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: const Center(
+        child: Center(
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             child: Text(
               _ScannerScreenState._cameraErrorMessage,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: AppColors.whiteMuted, fontSize: 13),
             ),
           ),
         ),
@@ -308,20 +308,20 @@ class _ScannerBox extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.no_photography_outlined,
-                                  color: Colors.white54, size: 36),
+                              Icon(Icons.no_photography_outlined,
+                                  color: AppColors.whiteFaint, size: 36),
                               const SizedBox(height: 10),
                               Text(
                                 'Camera error: ${error.errorCode.name}',
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 12),
+                                style: TextStyle(
+                                    color: AppColors.whiteMuted, fontSize: 12),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 10),
-                              const Text(
+                              Text(
                                 'Allow camera access in browser\nthen refresh the page.',
                                 style: TextStyle(
-                                    color: Colors.white54, fontSize: 11),
+                                    color: AppColors.whiteFaint, fontSize: 11),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -340,9 +340,9 @@ class _ScannerBox extends StatelessWidget {
                         children: [
                           CircularProgressIndicator(color: AppColors.blue),
                           const SizedBox(height: 12),
-                          const Text('Starting camera…',
+                          Text('Starting camera…',
                               style: TextStyle(
-                                  color: Colors.white70, fontSize: 12)),
+                                  color: AppColors.whiteMuted, fontSize: 12)),
                         ],
                       ),
                     ),
