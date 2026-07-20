@@ -192,7 +192,7 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       ),
 
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
