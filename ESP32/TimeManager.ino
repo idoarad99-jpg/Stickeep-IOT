@@ -1,9 +1,3 @@
-// connectToWiFi() now lives in WifiManager.ino — it needs to support
-// eduroam (WPA2-Enterprise) alongside plain networks and hotspots, and
-// stores whichever credentials were provisioned instead of a single
-// hardcoded network. Kept as the same function name so setup()'s
-// existing call site didn't need to change.
-
 void updateWifiStatusText()
 {
   if (WiFi.status() == WL_CONNECTED)
