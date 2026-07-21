@@ -1,46 +1,13 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image/image.dart' as img;
-import 'package:image_picker/image_picker.dart';
-import 'package:zxing2/qrcode.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:stickeep_app/theme/app_theme.dart';
 import 'package:stickeep_app/screens/student/home_screen.dart';
 import 'package:stickeep_app/utils/page_route.dart';
-
-/// Decodes a QR code from a still photo. Used instead of a live camera
-/// feed because Flutter Web has no way to drive manual/continuous
-/// autofocus on the browser's camera stream — letting the student take a
-/// photo hands focus control back to the phone's native camera app.
-String? decodeQrFromPhotoBytes(Uint8List bytes) {
-  final decodedImage = img.decodeImage(bytes);
-  if (decodedImage == null) return null;
-
-  // RGBLuminanceSource reads red from bits 16-23, green from 8-15, blue
-  // from 0-7 of each packed int (alpha ignored) — so the in-memory byte
-  // order needs to be [B, G, R, A] for a little-endian Int32 read to line
-  // up correctly. Using the wrong order here silently compresses the
-  // black/white contrast range instead of failing outright, which matters
-  // exactly in the marginal lighting conditions this feature targets.
-  final source = RGBLuminanceSource(
-    decodedImage.width,
-    decodedImage.height,
-    decodedImage
-        .convert(numChannels: 4)
-        .getBytes(order: img.ChannelOrder.bgra)
-        .buffer
-        .asInt32List(),
-  );
-
-  try {
-    final bitmap = BinaryBitmap(HybridBinarizer(source));
-    return QRCodeReader().decode(bitmap).text;
-  } catch (_) {
-    return null;
-  }
-}
 
 class ScannerScreen extends StatefulWidget {
   final String classroom;
@@ -61,98 +28,86 @@ class ScannerScreen extends StatefulWidget {
 class _ScannerScreenState extends State<ScannerScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _bounceY;
-  final ImagePicker _picker = ImagePicker();
-  final TextEditingController _manualCodeController = TextEditingController();
+  late Animation<double> _scanLineY;
+  late Animation<double> _bounceY;
+  late final MobileScannerController _cameraController;
 
   bool _scanned = false;
   bool _isLoading = false;
-  bool _showManualEntry = false;
-  String? _captureError;
-  String? _manualError;
+  bool _cameraReady = false;
+  bool _cameraError = false;
+  Timer? _cameraTimeout;
 
+  static const _scanDuration = Duration(milliseconds: 1400);
   static const _bounceDuration = Duration(milliseconds: 600);
+  static const _cameraErrorMessage =
+      'Camera failed to start. Please check camera permissions and refresh.';
 
   static const _steps = [
     (1, 'Find the sticker on your reserved seat'),
-    (2, 'Tap "Take photo of QR code" below'),
-    (3, 'Point your camera at the QR and take the photo'),
+    (2, 'Hold your phone 15–20cm from the barcode'),
+    (3, 'Keep steady until camera locks on'),
     (4, 'Wait for confirmation — a dog will appear! 🐶'),
   ];
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: _bounceDuration)
+    // Explicit resolution — without this, the web camera stream defaults
+    // to a low resolution (e.g. 640x480) that gets stretched to fill the
+    // preview box, making the QR scan look blurry regardless of the
+    // phone's actual camera quality.
+    _cameraController = MobileScannerController(
+      cameraResolution: const Size(1280, 720),
+    );
+    _controller = AnimationController(vsync: this, duration: _scanDuration)
       ..repeat(reverse: true);
-    _bounceY = Tween<double>(begin: 0, end: -14)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    _buildAnimations();
+    _startCamera();
+  }
+
+  Future<void> _startCamera() async {
+    _cameraTimeout = Timer(const Duration(seconds: 5), () {
+      if (mounted && !_cameraReady) setState(() => _cameraError = true);
+    });
+    try {
+      await _cameraController.start();
+      _cameraTimeout?.cancel();
+      if (mounted) setState(() => _cameraReady = true);
+    } catch (e) {
+      _cameraTimeout?.cancel();
+      if (mounted) setState(() => _cameraError = true);
+    }
+  }
+
+  void _buildAnimations() {
+    final curve = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _scanLineY = Tween<double>(begin: 12, end: 180).animate(curve);
+    _bounceY = Tween<double>(begin: 0, end: -14).animate(curve);
   }
 
   @override
   void dispose() {
+    _cameraTimeout?.cancel();
+    _cameraController.dispose();
     _controller.dispose();
-    _manualCodeController.dispose();
     super.dispose();
   }
 
-  Future<void> _takePhoto() async {
+  void _onQrDetect(BarcodeCapture capture) {
     if (_scanned || _isLoading) return;
-
-    setState(() => _captureError = null);
-
-    XFile? photo;
-    try {
-      photo = await _picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.rear,
-        imageQuality: 90,
-      );
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _captureError =
-          'Could not open the camera. Please allow camera access and try again.');
-      return;
-    }
-
-    if (photo == null) return; // Student cancelled the camera.
-
-    setState(() => _isLoading = true);
-
-    final bytes = await photo.readAsBytes();
-    final decoded = decodeQrFromPhotoBytes(bytes);
-
-    if (!mounted) return;
-
-    if (decoded == null) {
-      setState(() {
-        _isLoading = false;
-        _captureError =
-            'No QR code found in that photo. Get closer, hold steady, and try again.';
-      });
-      return;
-    }
-
-    if (decoded == widget.reservationId) {
-      await _confirmArrival();
+    final value = capture.barcodes.first.rawValue ?? '';
+    if (value.isEmpty) return;
+    if (value == widget.reservationId) {
+      _confirmArrival();
     } else {
       HapticFeedback.heavyImpact();
-      setState(() {
-        _isLoading = false;
-        _captureError = "QR code doesn't match this reservation. Please try again.";
-      });
-    }
-  }
-
-  Future<void> _submitManualCode() async {
-    final code = _manualCodeController.text.trim();
-    if (code.isEmpty || _isLoading) return;
-
-    if (code == widget.reservationId) {
-      setState(() => _manualError = null);
-      await _confirmArrival();
-    } else {
-      setState(() => _manualError = "That code doesn't match this reservation.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("QR code doesn't match. Please try again."),
+          backgroundColor: AppColors.red,
+        ),
+      );
     }
   }
 
@@ -214,17 +169,15 @@ class _ScannerScreenState extends State<ScannerScreen>
     if (!mounted) return;
 
     HapticFeedback.mediumImpact();
+    _cameraController.stop();
+    _controller.stop();
+    _controller.duration = _bounceDuration;
+    _buildAnimations();
+    _controller.repeat(reverse: true);
 
     setState(() {
       _scanned = true;
       _isLoading = false;
-    });
-  }
-
-  void _toggleManualEntry() {
-    setState(() {
-      _showManualEntry = !_showManualEntry;
-      _manualError = null;
     });
   }
 
@@ -262,32 +215,15 @@ class _ScannerScreenState extends State<ScannerScreen>
                       classroom: widget.classroom,
                       studentName: widget.studentName,
                     )
-                  : _CaptureBox(
-                      key: const ValueKey('capture'),
-                      isLoading: _isLoading,
-                      errorMessage: _captureError,
-                      onTakePhoto: _takePhoto,
+                  : _ScannerBox(
+                      key: const ValueKey('scanner'),
+                      scanLineY: _scanLineY,
+                      onDetect: _onQrDetect,
+                      controller: _cameraController,
+                      cameraReady: _cameraReady,
+                      cameraError: _cameraError,
                     ),
             ),
-            if (!_scanned) ...[
-              const SizedBox(height: 10),
-              Center(
-                child: TextButton(
-                  onPressed: _isLoading ? null : _toggleManualEntry,
-                  child: Text(
-                    _showManualEntry ? 'Hide manual entry' : 'Enter code manually',
-                    style: TextStyle(fontSize: 12, color: AppColors.blue),
-                  ),
-                ),
-              ),
-              if (_showManualEntry)
-                _ManualEntryBox(
-                  controller: _manualCodeController,
-                  errorMessage: _manualError,
-                  isLoading: _isLoading,
-                  onSubmit: _submitManualCode,
-                ),
-            ],
             const SizedBox(height: 24),
             AppCard(
               child: Column(
@@ -313,112 +249,167 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 }
 
-class _CaptureBox extends StatelessWidget {
-  final bool isLoading;
-  final String? errorMessage;
-  final VoidCallback onTakePhoto;
+class _ScannerBox extends StatelessWidget {
+  final Animation<double> scanLineY;
+  final void Function(BarcodeCapture) onDetect;
+  final MobileScannerController controller;
+  final bool cameraReady;
+  final bool cameraError;
 
-  const _CaptureBox({
+  const _ScannerBox({
     super.key,
-    required this.isLoading,
-    required this.errorMessage,
-    required this.onTakePhoto,
+    required this.scanLineY,
+    required this.onDetect,
+    required this.controller,
+    required this.cameraReady,
+    required this.cameraError,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Container(
-        height: 220,
-        color: const Color(0xFF1A1A1A),
-        padding: const EdgeInsets.all(20),
-        child: Center(
-          child: isLoading
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(color: AppColors.blue),
-                    const SizedBox(height: 12),
-                    Text('Checking photo…',
-                        style: TextStyle(
-                            color: AppColors.whiteMuted, fontSize: 12)),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.qr_code_scanner,
-                        color: AppColors.whiteFaint, size: 40),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: onTakePhoto,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.blue,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 12),
-                      ),
-                      child: const Text('📷 Take photo of QR code'),
-                    ),
-                    if (errorMessage != null) ...[
-                      const SizedBox(height: 14),
-                      Text(
-                        errorMessage!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.red, fontSize: 12),
-                      ),
-                    ],
-                  ],
-                ),
+    if (cameraError) {
+      return Container(
+        height: 200,
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(10),
         ),
-      ),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              _ScannerScreenState._cameraErrorMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.whiteMuted, fontSize: 13),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      animation: scanLineY,
+      builder: (context, _) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            height: 200,
+            child: Stack(
+              children: [
+                MobileScanner(
+                  controller: controller,
+                  onDetect: onDetect,
+                  errorBuilder: (context, error, child) {
+                    return ColoredBox(
+                      color: const Color(0xFF1A1A1A),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.no_photography_outlined,
+                                  color: AppColors.whiteFaint, size: 36),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Camera error: ${error.errorCode.name}',
+                                style: TextStyle(
+                                    color: AppColors.whiteMuted, fontSize: 12),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Allow camera access in browser\nthen refresh the page.',
+                                style: TextStyle(
+                                    color: AppColors.whiteFaint, fontSize: 11),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                if (!cameraReady)
+                  Container(
+                    color: const Color(0xFF1A1A1A),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(color: AppColors.blue),
+                          const SizedBox(height: 12),
+                          Text('Starting camera…',
+                              style: TextStyle(
+                                  color: AppColors.whiteMuted, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ),
+                _Corner(top: 8, left: 8, showTop: true, showLeft: true),
+                _Corner(top: 8, right: 8, showTop: true, showRight: true),
+                _Corner(bottom: 8, left: 8, showBottom: true, showLeft: true),
+                _Corner(bottom: 8, right: 8, showBottom: true, showRight: true),
+                if (cameraReady)
+                  Positioned(
+                    top: scanLineY.value,
+                    left: 0,
+                    right: 0,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: FractionallySizedBox(
+                        widthFactor: 0.8,
+                        child: Container(
+                          height: 2,
+                          decoration: BoxDecoration(
+                            color: AppColors.blue,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.blue.withOpacity(0.5),
+                                blurRadius: 4,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
 
-class _ManualEntryBox extends StatelessWidget {
-  final TextEditingController controller;
-  final String? errorMessage;
-  final bool isLoading;
-  final VoidCallback onSubmit;
+class _Corner extends StatelessWidget {
+  final double? top, left, right, bottom;
+  final bool showTop, showBottom, showLeft, showRight;
 
-  const _ManualEntryBox({
-    required this.controller,
-    required this.errorMessage,
-    required this.isLoading,
-    required this.onSubmit,
+  const _Corner({
+    this.top, this.left, this.right, this.bottom,
+    this.showTop = false, this.showBottom = false,
+    this.showLeft = false, this.showRight = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: controller,
-              enabled: !isLoading,
-              decoration: InputDecoration(
-                labelText: 'Reservation code',
-                hintText: 'Type the code from your reservation',
-                errorText: errorMessage,
-                border: const OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => onSubmit(),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: isLoading ? null : onSubmit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Confirm'),
-            ),
-          ],
+    final side = BorderSide(color: AppColors.blue, width: 2);
+    const none = BorderSide.none;
+    return Positioned(
+      top: top, left: left, right: right, bottom: bottom,
+      child: Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          border: Border(
+            top: showTop ? side : none,
+            bottom: showBottom ? side : none,
+            left: showLeft ? side : none,
+            right: showRight ? side : none,
+          ),
         ),
       ),
     );
