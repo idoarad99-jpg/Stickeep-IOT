@@ -227,26 +227,3 @@ exports.mirrorAdminRole = onDocumentWritten('students/{uid}', async (event) => {
   }
 });
 
-/**
- * One-time backfill for admins that were promoted before mirrorAdminRole
- * existed (the trigger above only fires on new writes). Gated by the same
- * DEVICE_API_KEY secret as the hardware endpoints, purely so this isn't a
- * fully open endpoint — not meant to be called by the ESP32.
- * Safe to call more than once; safe to delete this function after use.
- */
-exports.backfillAdminMirror = onRequest(
-  { secrets: [DEVICE_API_KEY], cors: false },
-  async (req, res) => {
-    const providedKey = req.get('x-device-key');
-    if (!providedKey || providedKey !== DEVICE_API_KEY.value()) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-
-    const snap = await db.collection('students').where('role', '==', 'admin').get();
-    const uids = snap.docs.map((doc) => doc.id);
-    await Promise.all(uids.map((uid) => rtdb.ref(`admins/${uid}`).set(true)));
-    res.status(200).json({ mirrored: uids });
-  }
-);
-
