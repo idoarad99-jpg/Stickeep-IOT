@@ -1,25 +1,46 @@
-## XXXXX Project by :  
-  
-## Details about the project
- 
-## Folder description :
-* ESP32: source code for the esp side (firmware).
-* Documentation: wiring diagram + basic operating instructions
-* Unit Tests: tests for individual hardware components (input / output devices)
-* flutter_app : dart code for our Flutter app.
-* Parameters: contains description of parameters and settings that can be modified IN YOUR CODE
-* Assets: link to 3D printed parts, Audio files used in this project, Fritzing file for connection diagram (FZZ format) etc
+## Stickeep — Accessible Seat Reservation System
 
-## ESP32 SDK version used in this project: 
+Built by the Stickeep team as part of ICST, Taub Faculty of Computer
+Science, Technion.
 
-## Arduino/ESP32 libraries used in this project:
-* XXXX - version XXXXX
-* XXXX - version XXXXX
-* XXXX - version XXXXX
+## What this project does
 
-## Connection diagram:
+Stickeep lets students reserve accessible seats in Technion classrooms
+through a Flutter app, and confirm their physical arrival at the seat
+in one of two ways: scanning a live QR code shown on a small screen
+mounted at the seat, or tapping an NFC student card against a reader on
+the same device — NFC exists specifically as an alternative for
+students who may find it hard to aim a phone camera precisely at a
+small on-screen code.
 
-## Project Poster:
- 
-This project is part of ICST - The Interdisciplinary Center for Smart Technologies, Taub Faculty of Computer Science, Technion
-https://icst.cs.technion.ac.il/
+## Folder description
+
+* **`ESP32/`** — firmware for the physical seat unit (ESP32 TTGO
+  T-Display + PN532 NFC reader + status LED). See
+  `ESP32/SETUP_NOTES.md` for build/flash instructions and
+  `ESP32/PROVISIONING.md` for per-device setup.
+* **`Documentation/`** — connection diagram, library/SDK versions,
+  project scope numbers, and the printable edge-cases list. Start with
+  `Documentation/CONNECTION_DIAGRAM.md`.
+* **`Unit Tests/`** — early standalone hardware validation tests
+  (display + WiFi) done before the full firmware in `ESP32/` existed.
+* **`stickeep_app/`** — the Flutter app (student booking flow + admin
+  panel), deployed at [stickeep.web.app](https://stickeep.web.app).
+  Backed by Firebase (Firestore, Realtime Database, Auth, Hosting,
+  Cloud Functions — see `stickeep_app/functions/`).
+
+## ESP32 SDK version used in this project
+
+Espressif `esp32:esp32` Arduino core, version **3.3.10**. Full details
+(including every Arduino library and its version) are in
+[`Documentation/LIBRARY_VERSIONS.md`](Documentation/LIBRARY_VERSIONS.md).
+
+## Connection diagram
+
+See [`Documentation/CONNECTION_DIAGRAM.md`](Documentation/CONNECTION_DIAGRAM.md)
+for the full PN532 + status LED wiring and pin table.
+
+## Project scope
+
+Commit count, contributor breakdown, and lines-of-code numbers are in
+[`Documentation/PROJECT_SCOPE.md`](Documentation/PROJECT_SCOPE.md).

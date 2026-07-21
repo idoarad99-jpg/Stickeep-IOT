@@ -18,6 +18,10 @@ class AdminHomeScreen extends StatefulWidget {
 
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   final _firestore = FirebaseFirestore.instance;
+  // Not a real access check — the actual gate is login_screen.dart only
+  // routing here when the signed-in user's Firestore role is 'admin'.
+  // This constant just exists so the fallback below has something to
+  // key off if that ever needs to become a real async check.
   static const _isAdmin = true;
 
   @override

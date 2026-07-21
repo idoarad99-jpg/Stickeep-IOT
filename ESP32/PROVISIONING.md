@@ -23,9 +23,12 @@ any reservations for a seat ID nobody created).
 
 3. **Flash the device** with that build.
 
-4. **Run through WiFi provisioning** (see `SETUP_NOTES.md`) — connect to
-   the device's own "Stickeep-Setup" access point and enter the venue's
-   network credentials.
+4. **Set the WiFi credentials before flashing** (see `SETUP_NOTES.md`,
+   section 4) — `HARDCODED_WIFI_SSID`/`HARDCODED_WIFI_PASSWORD` in
+   `WifiManager.ino` need to match the network this specific unit will
+   actually run on (a phone hotspot for the course submission, since
+   Technion WiFi isn't allowed). The captive-portal setup flow exists in
+   the code but isn't active right now — see the note in section 4.
 
 5. **Verify end to end**: book a test reservation in the app for that
    exact seat, right now, and confirm the physical unit shows it as
@@ -50,10 +53,11 @@ be.
 
 ## If you need to re-provision an already-deployed unit
 
-- **Change of WiFi network** (moved rooms/buildings): no reflash needed
-  — wire a button to `WIFI_RESET_PIN` (currently disabled, set to `-1`
-  in `IOT_Chair_20_6.ino`) and hold it at boot to re-enter the WiFi setup
-  portal.
+- **Change of WiFi network** (moved rooms/buildings): currently needs a
+  reflash with the new `HARDCODED_WIFI_SSID`/`PASSWORD`, since the
+  captive-portal re-provisioning flow isn't active right now (see
+  `SETUP_NOTES.md`, section 4). `WIFI_RESET_PIN` is unused while that's
+  the case.
 - **Change of `SEAT_ID`** (device physically moved to a different seat):
   this does need a reflash, since it's a compile-time constant. Update
   the tracking log at the same time.

@@ -1,16 +1,38 @@
 # stickeep_app
 
-A new Flutter project.
+The Flutter app half of Stickeep — an accessible seat-reservation
+system for Technion classrooms. Deployed at
+[stickeep.web.app](https://stickeep.web.app).
 
-## Getting Started
+See the repo root [`README.md`](../README.md) and
+[`../Documentation/`](../Documentation) for the full project
+description, architecture, and connection diagram — this file only
+covers running the app itself.
 
-This project is a starting point for a Flutter application.
+## Running locally
 
-A few resources to get you started if this is your first Flutter project:
+```
+flutter pub get
+flutter run -d chrome
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Building/deploying
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```
+flutter build web
+firebase deploy --only hosting
+```
+
+## Structure
+
+- `lib/screens/student/` — booking flow, QR/NFC arrival confirmation,
+  reservation history.
+- `lib/screens/admin/` — classroom/seat management, user search,
+  approvals.
+- `lib/screens/settings/` — accessibility settings (dark mode, high
+  contrast, colorblind-safe palette, text size).
+- `lib/theme/` — `AppColors`/`AppTheme` (all screens read colors
+  through these instead of hardcoding them, so accessibility toggles
+  apply app-wide) and `AccessibilityController`.
+- `functions/` — Cloud Functions the ESP32 hardware calls (it has no
+  Firebase Auth of its own).
