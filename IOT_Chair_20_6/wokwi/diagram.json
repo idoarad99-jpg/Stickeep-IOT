@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "author": "Stickeep team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "board-ili9341-cap-touch",
+      "id": "lcd1",
+      "top": -80,
+      "left": 140,
+      "attrs": {}
+    },
+    {
+      "type": "board-mfrc522",
+      "id": "rfid1",
+      "top": 100,
+      "left": 220,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 180,
+      "left": 20,
+      "attrs": { "color": "green" }
+    }
+  ],
+  "connections": [
+    ["esp:3V3", "lcd1:VCC", "red", []],
+    ["esp:GND.1", "lcd1:LED", "black", []],
+    ["esp:GND.1", "lcd1:GND", "black", []],
+    ["esp:18", "lcd1:SCK", "green", []],
+    ["esp:23", "lcd1:SDI", "blue", []],
+    ["esp:19", "lcd1:SDO", "yellow", []],
+    ["esp:2", "lcd1:D_C", "orange", []],
+    ["esp:32", "lcd1:CS", "purple", []],
+    ["esp:4", "lcd1:RESET", "brown", []],
+
+    ["esp:3V3", "rfid1:3.3V", "red", []],
+    ["esp:GND.2", "rfid1:GND", "black", []],
+    ["esp:18", "rfid1:SCK", "green", []],
+    ["esp:23", "rfid1:MOSI", "blue", []],
+    ["esp:19", "rfid1:MISO", "yellow", []],
+    ["esp:5", "rfid1:SDA", "purple", []],
+    ["esp:27", "rfid1:RST", "brown", []],
+
+    ["esp:GND.3", "btn1:2.l", "black", []],
+    ["esp:15", "btn1:1.l", "orange", []]
+  ]
+}
